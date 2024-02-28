@@ -1,0 +1,366 @@
+# Canny边缘检测算法实现
+
+姓名：许展风 			学号：3210100658
+
+电子邮箱：zhanfeng_xu@outlook.com  		 联系电话：15224131655
+
+老师：潘纲老师			报告日期：2023年11月22日
+
+## 一、功能简述及运行说明
+
+### 1.1 功能简述
+
+对输入的一张彩色图像，通过Canny Edge 检测算法实现边缘检测，输出中间结果与最终结果图。
+
+### 1.2 运行说明
+
+输入：将彩色图片放在与二进制源程序同一文件夹，运行程序，会跳出命令框，显示”the name of picture fire:“，此时输入彩色图片的文件名（包括后缀），回车后，显示”input the highThreshold:“，输入高阈值，回车后，显示”input the lowThreshold:“输入低阈值，再次回车，程序开始计算，计算完毕将显示中间结果图，包括梯度幅值图、非极大值抑制后结果图、最终结果图，按下Esc关闭图像，将显示最终彩色边缘图，按下Esc关闭图像，程序自动将显示的结果图片保存于同一文件夹。
+
+  <center class="half">
+  <img src="image/HW1/image-20231122203920505.png" title = 'lena彩色照' width=500/>
+  </center>
+
+
+## 二、开发与运行环境
+
+编程语言：python 3.10.6
+
+编程环境：VScode+Jupyter Notebook
+
+运行环境：Windows
+
+## 三、算法原理
+
+### 3.1 算法流程图
+
+```mermaid
+graph LR
+    A[彩色图片]
+    A --> C[灰度化处理]
+    C --> D[高斯滤波]
+    D --> E[计算图像梯度]
+    E --> F[非极大值抑制]
+    F --> G[双阈值判断连接边缘]
+    G --> H[覆盖彩色图片]
+
+```
+
+### 3.2 具体原理介绍
+
+#### 1.  灰度化处理
+
+$$
+Image_{gray} = 0.29 \times I_R + 0.587 \times I_G + 0.114 \times I_B
+$$
+
+灰度化可由，原图像红、绿、蓝三个维度上的像素值线性变换实现。
+
+
+
+#### 2. 高斯滤波
+
+高斯滤波利用高斯函数生成的高斯核（高斯模板）对图像进行卷积。每个像素点由周围点的加权平均得到，加权系数则由高斯核决定。通过高斯滤波能对图像进行初步降噪，除去噪声可能引起的边缘。
+
+
+
+#### 3. 计算图像梯度
+
+$$
+G_x =
+\left[
+\begin{array}{c}
+-1 & 0 & 1 \\
+-2 & 0 & 2 \\
+-1 & 0 & 1
+\end{array}
+\right]
+\otimes Image,
+G_y =
+\left[
+\begin{array}{c}
+1 & 2 & 1 \\
+0 & 0 & 0 \\
+-1 & 2 & -1
+\end{array}
+\right]
+\otimes Image
+$$
+
+使用Sobel算子计算灰度图像在水平和垂直方向的梯度值，从而得到每个像素点的梯度强度和方向。计算方式同样是卷积。通过$G_x$与$G_y$进一步得到图像梯度幅值与梯度方向。通过梯度计算得到的点集包括了所求边缘。
+$$
+M(x,y)=\sqrt{G^2_x(x,y)+G^2_y(x,y)} \\ \theta(x,y)=arctan(\frac{G^2_y(x,y)}{G^2_x(x,y)})
+$$
+
+
+
+#### 4. 非极大值抑制
+
+  <center class="half">
+<img src="image/HW1/image-20231122211350555.png"  style="width:50%;" />
+  </center>
+
+
+将梯度方向离散化，分类为4个方向，对于任意像素点，在其对应的梯度方向上比较相邻的像素点，若其不是其中的最大值，则抑制该像素点。非极大值抑制可以将梯度图中的边缘突出，使得边缘检测精度更高。
+
+
+
+#### 5. 双阈值判断连接边缘
+
+设定两个阈值，一个为高阈值，一个低阈值，将高于高阈值像素的点标记为强边缘，低于高阈值、高于低阈值的点标为弱边缘，将低于低阈值的点标记为非边缘。抑制所有非边缘，保留所有强边缘。考察弱边缘，若其周围像素点中有强边缘，则保留，否则抑制。合适的阈值选择可以除去内部不需要的弱边缘，并连接不连续的边缘。
+
+
+
+## 四、具体实现
+
+### 4.1 灰度化处理
+
+```python
+    # 图片转灰度
+    imageGray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+```
+
+直接使用openCV函数库中的函数，得到灰度图片。
+
+
+
+### 4.2 高斯滤波
+
+```python
+    # 进行高斯模糊处理
+    imageGauss = cv2.GaussianBlur(imageGray, (3, 3), 1)
+```
+
+使用openCV函数库中的函数，其中（3，3）指的是大小为3×3的高斯核。
+
+
+
+### 4.3 计算图像梯度
+
+```python
+    for i in range(1, Size[0] - 1):
+        for j in range(1, Size[1] - 1):
+            P[i, j] = 2 * (image[i + 1, j] - image[i - 1, j]) +
+            		  image[i + 1, j + 1] - image[i - 1, j + 1] +
+            		  image[i + 1, j - 1] - image[i - 1, j - 1]
+            Q[i, j] = 2 * (image[i, j + 1] - image[i, j - 1]) +
+            		  image[i + 1, j + 1] - image[i + 1, j - 1] +
+            		  image[i - 1, j + 1] - image[i - 1, j - 1]
+            M[i, j] = np.sqrt(P[i, j]**2 + Q[i, j]**2)
+            if (P[i, j] != 0):
+                theta[i, j] = np.arctan(Q[i, j] / P[i, j])
+            else:
+                theta[i, j] = np.pi / 2
+```
+
+x、y方向上的梯度可直接由公式计算，同时计算梯度方向时，要单独考虑x方向为0的情况，此时方向为$\frac{\pi}{2}$。
+
+
+
+### 4.4 非极大值抑制
+
+通过方向角离散化，将方向角分类并标记，考虑到np.arctan函数的返回值是$(-\frac{\pi}{2},\frac{\pi}{2}]$，因此只需对该范围内进行离散。
+
+非极大抑制函数中，通过方向角标记决定像素点值比较的方向，根据比较结果决定是否抑制。
+
+
+
+### 4.5 双阈值连接边缘
+
+```python
+# 双阈值连接边缘
+def EdgeJoint(M, highThreshold, lowThreshold):
+    '''双阈值判断后连接边缘
+
+    :M: 输入图像
+    :highThreshold: 高阈值
+    :lowThreshold: 低阈值
+    :return M: 输出处理后图像
+    '''
+    Size = np.shape(M)
+    high = np.zeros(np.shape(M))
+    low = np.zeros(np.shape(M))
+    for i in range(1, Size[0] - 1):              # 判定得到分布图
+        for j in range(1, Size[1] - 1):
+            if (M[i, j] > highThreshold):
+                high[i, j] = 1
+            elif (M[i, j] > lowThreshold):
+                low[i, j] = 1
+
+    for i in range(1, Size[0] - 1):
+        for j in range(1, Size[0] - 1):
+            if (high[i, j] == 1 and low[i, j] != 1):        # 遍历所有强边缘，以其为起点进行边缘连接
+                [high, low] = Joint(high, low, i, j)
+    return np.uint8(high * M)
+
+
+def Joint(high, low, i, j):
+    '''连接指定点的边缘
+
+    :high: 高阈值分布图
+    :low: 低阈值分布图
+    :i: 目标点横坐标
+    :j: 目标点纵坐标
+    :return [high, low]: 高、低阈值分布图
+    '''
+    Size = np.shape(high)
+    if (i != 0 and j != 0 and i != Size[0] - 1 and j != Size[0] - 1):
+        for k in range(0, 3):
+            for m in range(0, 3):
+                if (high[i - 1 + k, j - 1 + m] != 1
+                        and low[i - 1 + k, j - 1 + m] == 1): # 将弱梯度点标记为强梯度，同时对该弱梯度作为新的连接起点
+                    high[i - 1 + k, j - 1 + m] = 1
+                    [high, low] = Joint(high, low, i - 1 + k, j - 1 + m)
+    return [high, low]
+
+```
+
+先根据双阈值判断得到两张图，一张标记了强边缘点，一张标记了弱边缘点。主函数遍历所有强边缘点，对于任意强边缘通过函数Joint对周围的弱边缘点进行连接。而Joint函数，扫描输入点的周围像素，发现还未标为强边缘的弱边缘，则将其标记并以此像素点作为起点再次通过Joint函数连接边缘，形成迭代。
+
+
+
+### 4.6 彩色边缘图片获取
+
+```python
+def mask(maskImage,image):
+    try:
+        if (np.shape(maskImage)!=np.shape(image)[0:2]):
+            raise ValueError('!图片大小不一致!')
+    except Exception as e:
+        print(e)
+        return
+
+    Size = np.shape(image)
+    for i in range(0,Size[0]):
+        for j in range(0,Size[1]):
+            if(maskImage[i,j]==0):
+                for k in range(0,3):
+                    image[i,j,k] = 0
+    return  np.uint8(image)
+```
+
+判断两张输入图片大小是否一致，一致后执行覆盖操作，相当于对于原彩色图像，当覆盖图像像素值为0，则抑制对应处的彩色图像像素，由于彩色图片是三维度，在第三个维度有RGB三个通道，因此需要将三个通道都抑制。
+
+
+
+## 五、实验结果与分析
+
+### 5.1 梯度计算结果
+
+lena图片：
+
+<center class="half">
+<img src="image/HW1/lena.jpg" title = 'lena彩色照' width=200/>
+<img src="image/HW1/magGradient2.png" title = 'lena照梯度幅值图' width=200/>
+</center>
+
+
+  梯度幅值反映了每个像素点周边的像素变化大小，处于边缘的像素点梯度值大，则在灰度显示中越白，变化越小，则越黑。因此梯度幅值图中白线勾勒出图片的边缘。可以看到此时的边缘线较粗，勾勒出了大部分轮廓。
+
+个人图片：
+
+<center class="half">
+<img src="image/HW1/head.jpg" title = '个人彩色照' width=200/>
+<img src="image/HW1/magGradient1.png" title = '个人照梯度幅值图' width=200/>
+</center>
+
+将个人照片进行梯度计算，得到梯度幅值图，可以看到白线也较为明显地勾勒出边缘。对比图中肩膀的部分，可以看到原图中因为拍摄时光线原因，左边轮廓更明显，右边衣服与背景颜色相近轮廓不明显。因此在梯度幅值图中，左边边缘更亮更明显，而右边几乎没有轮廓。
+
+
+
+### 5.2 非极大值抑制处理结果
+
+lena图片：
+
+<center class="half">
+<img src="image/HW1/maggradient2.png" title='lena梯度幅值图' width=200/>
+<img src="image/HW1/magsuppression2.png" title='lena非极大值抑制处理图' width=200/>
+</center>
+
+非极大值抑制处理后，可以看到边缘线条得到了精确与细化，特别是lena的头发处的大片粗线条，抑制为更精致的细线条。lena的鼻子、嘴处的部分，从高梯度区域识别为线条化的边缘。
+
+
+
+个人图片:
+
+<center class="half">
+<img src="image/HW1/maggradient1.png" title='个人梯度幅值图' width=200/>
+<img src="image/HW1/magsuppression1.png" title='个人非极大值抑制处理图' width=200/>
+</center>
+
+对个人照片可以看到有同样的细化精确的效果。
+
+
+
+### 5.3 双阈值判断连接边缘处理结果
+
+lena图片：
+
+<table >
+   <th width="180px" >H=50, L=20</th>
+   <th width="180px">H=150, L=200</th>
+   <th width="180px">H=230, L=20</th>
+   <th width="180px">H=230, L=100</th>
+</table>
+  <center class="half">
+  <img src="image/HW1/50-20.png" title='lena双阈值连接边缘图' width=180/>
+  <img src="image/HW1/150-100.png" title='lena双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-20.png" title='lena双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-100.png" title='lena双阈值连接边缘图' width=180/>
+  </center>
+
+  用不同的高低阈值选择，得到不同的边缘连接结果：像素点的幅值大小是0-255，当H=50，L=20时，高低阈值的选择都偏低，有大部分的边缘被确定为强边缘而保留，且更多的弱边缘被连接，基本保留了大部分上一处理结果的像素；当H=150，L=100时，小于100的像素将被抑制，因此去除了图中原本‘灰色’的内部边缘；当H=230，L=20时，高阈值被定位很高，但低阈值很低，由此将保留少部分特别强的边缘以及连接上其周围的大部分弱边缘，所以细节更少但是能保留较为完整的边缘线条；当H=230，L=100时，只有较强的像素点被保留为强边缘或可连接的弱边缘，因此几乎只有强边缘被保留，很少的较强弱边缘能被保留，因此图中形成不完整的边缘线条，几乎看不到灰色的弱边缘线条。
+
+
+
+个人图片：
+
+<table >
+   <th width="180px" >H=50, L=20</th>
+   <th width="180px">H=150, L=200</th>
+   <th width="180px">H=230, L=20</th>
+   <th width="180px">H=230, L=100</th>
+</table>
+  <center class="half">
+  <img src="image/HW1/50-20-2.png" title='个人双阈值连接边缘图' width=180/>
+  <img src="image/HW1/150-100-2.png" title='个人双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-20-2.png" title='个人双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-100-2.png" title='个人双阈值连接边缘图' width=180/>
+  </center>
+
+
+  用相同的分析方法能得到与Lena图片相同的结论，但是可以看到在lena图片，H=150，L=100可以得到一个较好的边缘检测结果，而在个人图片中，H=50，L=20会更好一些。因为不同图片的梯度范围是不同的，所需的目标边缘所处的像素值区间不同，因此想得到一个好的边缘检测结果，需要针对图片进一步调整阈值。
+
+### 5.4 最终彩色图片
+
+lena图片：
+
+  <center class="half">
+  <img src="image/HW1/lena.jpg" title='lena彩色原图' width=200/>
+  <img src="image/HW1/colorimage1.png" title='lena彩色边缘图' width=200/>
+  </center>
+
+  将彩色图片覆盖后，得到彩色的边缘图，原边缘图中像素值存在的点被替换为彩色图片的原像素值。
+
+
+
+个人图片:
+
+  <center class="half">
+  <img src="image/HW1/head.jpg" title='个人彩色原图' width=200/>
+  <img src="image/HW1/colorimage2.png" title='个人彩色边缘图' width=200/>
+  </center>
+
+## 六、结论与心得体会
+
+### 结论
+
+Canny算法有效地得到了一个彩色图片的边缘，实现了边缘检测。在使用Canny边缘检测算法时，有两个可调参数是双阈值检测的高低阈值，要根据实际的目标图片调整高低阈值的大小，才能得到更符合要求的边缘检测图片。
+
+
+
+### 心得体会
+
+1. 在编写Canny边缘检测算法的过程中，进一步理解了算法的主要步骤及其意义。
+
+2. 当编写图像梯度计算函数时，发现了在计算过程中要使用浮点类型的像素值，而在图片展示函数时，图片像素应为整形，因此图像的输入时，要将图像明确为float，而在函数输出图象时，应输出为int类型。
+3. 双阈值连接边缘的函数编写过程中，反复思考了如何实现强边缘对弱边缘的连接，最后仍是需要用比较多的空间（两个标记矩阵）以及反复迭代的方法来实现，特别是迭代时，会有一种类似栈或树的结构的感觉。也许用C++等语言，利用链表可以更好地编写这一函数。

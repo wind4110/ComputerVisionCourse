@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>1. Canny边缘检测算法实现 &mdash; ComputerVersionCourse 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="2. 编程实现多张图片的自动拼接" href="HW2.html" />
+    <link rel="prev" title="Welcome to ComputerVersionCourse’s documentation!" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ComputerVersionCourse
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">1. Canny边缘检测算法实现</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">1.1. 一、功能简述及运行说明</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">1.1.1. 1.1 功能简述</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">1.1.2. 1.2 运行说明</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">1.2. 二、开发与运行环境</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">1.3. 三、算法原理</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id6">1.3.1. 3.1 算法流程图</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id7">1.3.2. 3.2 具体原理介绍</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id8">1.3.2.1. 1.  灰度化处理</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id9">1.3.2.2. 2. 高斯滤波</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id10">1.3.2.3. 3. 计算图像梯度</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id11">1.3.2.4. 4. 非极大值抑制</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id12">1.3.2.5. 5. 双阈值判断连接边缘</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">1.4. 四、具体实现</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id14">1.4.1. 4.1 灰度化处理</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">1.4.2. 4.2 高斯滤波</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">1.4.3. 4.3 计算图像梯度</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17">1.4.4. 4.4 非极大值抑制</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id18">1.4.5. 4.5 双阈值连接边缘</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id19">1.4.6. 4.6 彩色边缘图片获取</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id20">1.5. 五、实验结果与分析</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id21">1.5.1. 5.1 梯度计算结果</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id22">1.5.2. 5.2 非极大值抑制处理结果</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id23">1.5.3. 5.3 双阈值判断连接边缘处理结果</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id24">1.5.4. 5.4 最终彩色图片</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id25">1.6. 六、结论与心得体会</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id26">1.6.1. 结论</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id27">1.6.2. 心得体会</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="HW2.html">2. 编程实现多张图片的自动拼接</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW3.html">3. 写代码实现Eigenface人脸识别的训练、识别、重构过程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW4.html">4. 编程实现 LeNet 的训练和 U-Net 的补全及测试</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW5.html">5. 精灵宝可梦类型预测任务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="review.html">6. 计算机视觉复习</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ComputerVersionCourse</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">1. </span>Canny边缘检测算法实现</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/HW1.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="canny">
+<h1><span class="section-number">1. </span>Canny边缘检测算法实现<a class="headerlink" href="#canny" title="Permalink to this heading"></a></h1>
+<p>姓名：许展风 			学号：3210100658</p>
+<p>电子邮箱：zhanfeng_xu&#64;outlook.com  		 联系电话：15224131655</p>
+<p>老师：潘纲老师			报告日期：2023年11月22日</p>
+<section id="id1">
+<h2><span class="section-number">1.1. </span>一、功能简述及运行说明<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<section id="id2">
+<h3><span class="section-number">1.1.1. </span>1.1 功能简述<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<p>对输入的一张彩色图像，通过Canny Edge 检测算法实现边缘检测，输出中间结果与最终结果图。</p>
+</section>
+<section id="id3">
+<h3><span class="section-number">1.1.2. </span>1.2 运行说明<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+<p>输入：将彩色图片放在与二进制源程序同一文件夹，运行程序，会跳出命令框，显示”the name of picture fire:“，此时输入彩色图片的文件名（包括后缀），回车后，显示”input the highThreshold:“，输入高阈值，回车后，显示”input the lowThreshold:“输入低阈值，再次回车，程序开始计算，计算完毕将显示中间结果图，包括梯度幅值图、非极大值抑制后结果图、最终结果图，按下Esc关闭图像，将显示最终彩色边缘图，按下Esc关闭图像，程序自动将显示的结果图片保存于同一文件夹。</p>
+  <center class="half">
+  <img src="image/HW1/image-20231122203920505.png" title = 'lena彩色照' width=500/>
+  </center></section>
+</section>
+<section id="id4">
+<h2><span class="section-number">1.2. </span>二、开发与运行环境<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h2>
+<p>编程语言：python 3.10.6</p>
+<p>编程环境：VScode+Jupyter Notebook</p>
+<p>运行环境：Windows</p>
+</section>
+<section id="id5">
+<h2><span class="section-number">1.3. </span>三、算法原理<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h2>
+<section id="id6">
+<h3><span class="section-number">1.3.1. </span>3.1 算法流程图<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR
+    A[彩色图片]
+    A --&gt; C[灰度化处理]
+    C --&gt; D[高斯滤波]
+    D --&gt; E[计算图像梯度]
+    E --&gt; F[非极大值抑制]
+    F --&gt; G[双阈值判断连接边缘]
+    G --&gt; H[覆盖彩色图片]
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h3><span class="section-number">1.3.2. </span>3.2 具体原理介绍<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h3>
+<section id="id8">
+<h4><span class="section-number">1.3.2.1. </span>1.  灰度化处理<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h4>
+<p>$$
+Image_{gray} = 0.29 \times I_R + 0.587 \times I_G + 0.114 \times I_B
+$$</p>
+<p>灰度化可由，原图像红、绿、蓝三个维度上的像素值线性变换实现。</p>
+</section>
+<section id="id9">
+<h4><span class="section-number">1.3.2.2. </span>2. 高斯滤波<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h4>
+<p>高斯滤波利用高斯函数生成的高斯核（高斯模板）对图像进行卷积。每个像素点由周围点的加权平均得到，加权系数则由高斯核决定。通过高斯滤波能对图像进行初步降噪，除去噪声可能引起的边缘。</p>
+</section>
+<section id="id10">
+<h4><span class="section-number">1.3.2.3. </span>3. 计算图像梯度<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h4>
+<p>$$
+G_x =
+\left[
+\begin{array}{c}
+-1 &amp; 0 &amp; 1 \
+-2 &amp; 0 &amp; 2 \
+-1 &amp; 0 &amp; 1
+\end{array}
+\right]
+\otimes Image,
+G_y =
+\left[
+\begin{array}{c}
+1 &amp; 2 &amp; 1 \
+0 &amp; 0 &amp; 0 \
+-1 &amp; 2 &amp; -1
+\end{array}
+\right]
+\otimes Image
+$$</p>
+<p>使用Sobel算子计算灰度图像在水平和垂直方向的梯度值，从而得到每个像素点的梯度强度和方向。计算方式同样是卷积。通过$G_x$与$G_y$进一步得到图像梯度幅值与梯度方向。通过梯度计算得到的点集包括了所求边缘。
+$$
+M(x,y)=\sqrt{G^2_x(x,y)+G^2_y(x,y)} \ \theta(x,y)=arctan(\frac{G^2_y(x,y)}{G^2_x(x,y)})
+$$</p>
+</section>
+<section id="id11">
+<h4><span class="section-number">1.3.2.4. </span>4. 非极大值抑制<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h4>
+  <center class="half">
+<img src="image/HW1/image-20231122211350555.png"  style="width:50%;" />
+  </center><p>将梯度方向离散化，分类为4个方向，对于任意像素点，在其对应的梯度方向上比较相邻的像素点，若其不是其中的最大值，则抑制该像素点。非极大值抑制可以将梯度图中的边缘突出，使得边缘检测精度更高。</p>
+</section>
+<section id="id12">
+<h4><span class="section-number">1.3.2.5. </span>5. 双阈值判断连接边缘<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h4>
+<p>设定两个阈值，一个为高阈值，一个低阈值，将高于高阈值像素的点标记为强边缘，低于高阈值、高于低阈值的点标为弱边缘，将低于低阈值的点标记为非边缘。抑制所有非边缘，保留所有强边缘。考察弱边缘，若其周围像素点中有强边缘，则保留，否则抑制。合适的阈值选择可以除去内部不需要的弱边缘，并连接不连续的边缘。</p>
+</section>
+</section>
+</section>
+<section id="id13">
+<h2><span class="section-number">1.4. </span>四、具体实现<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h2>
+<section id="id14">
+<h3><span class="section-number">1.4.1. </span>4.1 灰度化处理<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 图片转灰度</span>
+    <span class="n">imageGray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">image</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>直接使用openCV函数库中的函数，得到灰度图片。</p>
+</section>
+<section id="id15">
+<h3><span class="section-number">1.4.2. </span>4.2 高斯滤波<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 进行高斯模糊处理</span>
+    <span class="n">imageGauss</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">GaussianBlur</span><span class="p">(</span><span class="n">imageGray</span><span class="p">,</span> <span class="p">(</span><span class="mi">3</span><span class="p">,</span> <span class="mi">3</span><span class="p">),</span> <span class="mi">1</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>使用openCV函数库中的函数，其中（3，3）指的是大小为3×3的高斯核。</p>
+</section>
+<section id="id16">
+<h3><span class="section-number">1.4.3. </span>4.3 计算图像梯度<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">-</span> <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span> <span class="o">+</span>
+            		  <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+            		  <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">Q</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">])</span> <span class="o">+</span>
+            		  <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span> <span class="o">+</span>
+            		  <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="n">image</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span><span class="p">]</span>
+            <span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sqrt</span><span class="p">(</span><span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span> <span class="o">+</span> <span class="n">Q</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span><span class="o">**</span><span class="mi">2</span><span class="p">)</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">):</span>
+                <span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">arctan</span><span class="p">(</span><span class="n">Q</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">/</span> <span class="n">P</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">])</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">theta</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">pi</span> <span class="o">/</span> <span class="mi">2</span>
+</pre></div>
+</div>
+<p>x、y方向上的梯度可直接由公式计算，同时计算梯度方向时，要单独考虑x方向为0的情况，此时方向为$\frac{\pi}{2}$。</p>
+</section>
+<section id="id17">
+<h3><span class="section-number">1.4.4. </span>4.4 非极大值抑制<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h3>
+<p>通过方向角离散化，将方向角分类并标记，考虑到np.arctan函数的返回值是$(-\frac{\pi}{2},\frac{\pi}{2}]$，因此只需对该范围内进行离散。</p>
+<p>非极大抑制函数中，通过方向角标记决定像素点值比较的方向，根据比较结果决定是否抑制。</p>
+</section>
+<section id="id18">
+<h3><span class="section-number">1.4.5. </span>4.5 双阈值连接边缘<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 双阈值连接边缘</span>
+<span class="k">def</span> <span class="nf">EdgeJoint</span><span class="p">(</span><span class="n">M</span><span class="p">,</span> <span class="n">highThreshold</span><span class="p">,</span> <span class="n">lowThreshold</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;双阈值判断后连接边缘</span>
+
+<span class="sd">    :M: 输入图像</span>
+<span class="sd">    :highThreshold: 高阈值</span>
+<span class="sd">    :lowThreshold: 低阈值</span>
+<span class="sd">    :return M: 输出处理后图像</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">Size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">M</span><span class="p">)</span>
+    <span class="n">high</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">M</span><span class="p">))</span>
+    <span class="n">low</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">M</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>              <span class="c1"># 判定得到分布图</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Size</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">highThreshold</span><span class="p">):</span>
+                <span class="n">high</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+            <span class="k">elif</span> <span class="p">(</span><span class="n">M</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">lowThreshold</span><span class="p">):</span>
+                <span class="n">low</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="n">Size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+            <span class="k">if</span> <span class="p">(</span><span class="n">high</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">low</span><span class="p">[</span><span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span><span class="p">):</span>        <span class="c1"># 遍历所有强边缘，以其为起点进行边缘连接</span>
+                <span class="p">[</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">]</span> <span class="o">=</span> <span class="n">Joint</span><span class="p">(</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">high</span> <span class="o">*</span> <span class="n">M</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">Joint</span><span class="p">(</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">i</span><span class="p">,</span> <span class="n">j</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;连接指定点的边缘</span>
+
+<span class="sd">    :high: 高阈值分布图</span>
+<span class="sd">    :low: 低阈值分布图</span>
+<span class="sd">    :i: 目标点横坐标</span>
+<span class="sd">    :j: 目标点纵坐标</span>
+<span class="sd">    :return [high, low]: 高、低阈值分布图</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">Size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">high</span><span class="p">)</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">i</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">!=</span> <span class="mi">0</span> <span class="ow">and</span> <span class="n">i</span> <span class="o">!=</span> <span class="n">Size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span> <span class="ow">and</span> <span class="n">j</span> <span class="o">!=</span> <span class="n">Size</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">-</span> <span class="mi">1</span><span class="p">):</span>
+        <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">3</span><span class="p">):</span>
+                <span class="k">if</span> <span class="p">(</span><span class="n">high</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">k</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">m</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">1</span>
+                        <span class="ow">and</span> <span class="n">low</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">k</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">m</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">):</span> <span class="c1"># 将弱梯度点标记为强梯度，同时对该弱梯度作为新的连接起点</span>
+                    <span class="n">high</span><span class="p">[</span><span class="n">i</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">k</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">m</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span>
+                    <span class="p">[</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">]</span> <span class="o">=</span> <span class="n">Joint</span><span class="p">(</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">,</span> <span class="n">i</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">k</span><span class="p">,</span> <span class="n">j</span> <span class="o">-</span> <span class="mi">1</span> <span class="o">+</span> <span class="n">m</span><span class="p">)</span>
+    <span class="k">return</span> <span class="p">[</span><span class="n">high</span><span class="p">,</span> <span class="n">low</span><span class="p">]</span>
+</pre></div>
+</div>
+<p>先根据双阈值判断得到两张图，一张标记了强边缘点，一张标记了弱边缘点。主函数遍历所有强边缘点，对于任意强边缘通过函数Joint对周围的弱边缘点进行连接。而Joint函数，扫描输入点的周围像素，发现还未标为强边缘的弱边缘，则将其标记并以此像素点作为起点再次通过Joint函数连接边缘，形成迭代。</p>
+</section>
+<section id="id19">
+<h3><span class="section-number">1.4.6. </span>4.6 彩色边缘图片获取<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">mask</span><span class="p">(</span><span class="n">maskImage</span><span class="p">,</span><span class="n">image</span><span class="p">):</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">maskImage</span><span class="p">)</span><span class="o">!=</span><span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">image</span><span class="p">)[</span><span class="mi">0</span><span class="p">:</span><span class="mi">2</span><span class="p">]):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s1">&#39;!图片大小不一致!&#39;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span>
+
+    <span class="n">Size</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">shape</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">Size</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+        <span class="k">for</span> <span class="n">j</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="n">Size</span><span class="p">[</span><span class="mi">1</span><span class="p">]):</span>
+            <span class="k">if</span><span class="p">(</span><span class="n">maskImage</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">]</span><span class="o">==</span><span class="mi">0</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">3</span><span class="p">):</span>
+                    <span class="n">image</span><span class="p">[</span><span class="n">i</span><span class="p">,</span><span class="n">j</span><span class="p">,</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">return</span>  <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">image</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>判断两张输入图片大小是否一致，一致后执行覆盖操作，相当于对于原彩色图像，当覆盖图像像素值为0，则抑制对应处的彩色图像像素，由于彩色图片是三维度，在第三个维度有RGB三个通道，因此需要将三个通道都抑制。</p>
+</section>
+</section>
+<section id="id20">
+<h2><span class="section-number">1.5. </span>五、实验结果与分析<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h2>
+<section id="id21">
+<h3><span class="section-number">1.5.1. </span>5.1 梯度计算结果<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h3>
+<p>lena图片：</p>
+<center class="half">
+<img src="image/HW1/lena.jpg" title = 'lena彩色照' width=200/>
+<img src="image/HW1/magGradient2.png" title = 'lena照梯度幅值图' width=200/>
+</center><p>梯度幅值反映了每个像素点周边的像素变化大小，处于边缘的像素点梯度值大，则在灰度显示中越白，变化越小，则越黑。因此梯度幅值图中白线勾勒出图片的边缘。可以看到此时的边缘线较粗，勾勒出了大部分轮廓。</p>
+<p>个人图片：</p>
+<center class="half">
+<img src="image/HW1/head.jpg" title = '个人彩色照' width=200/>
+<img src="image/HW1/magGradient1.png" title = '个人照梯度幅值图' width=200/>
+</center><p>将个人照片进行梯度计算，得到梯度幅值图，可以看到白线也较为明显地勾勒出边缘。对比图中肩膀的部分，可以看到原图中因为拍摄时光线原因，左边轮廓更明显，右边衣服与背景颜色相近轮廓不明显。因此在梯度幅值图中，左边边缘更亮更明显，而右边几乎没有轮廓。</p>
+</section>
+<section id="id22">
+<h3><span class="section-number">1.5.2. </span>5.2 非极大值抑制处理结果<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h3>
+<p>lena图片：</p>
+<center class="half">
+<img src="image/HW1/maggradient2.png" title='lena梯度幅值图' width=200/>
+<img src="image/HW1/magsuppression2.png" title='lena非极大值抑制处理图' width=200/>
+</center><p>非极大值抑制处理后，可以看到边缘线条得到了精确与细化，特别是lena的头发处的大片粗线条，抑制为更精致的细线条。lena的鼻子、嘴处的部分，从高梯度区域识别为线条化的边缘。</p>
+<p>个人图片:</p>
+<center class="half">
+<img src="image/HW1/maggradient1.png" title='个人梯度幅值图' width=200/>
+<img src="image/HW1/magsuppression1.png" title='个人非极大值抑制处理图' width=200/>
+</center><p>对个人照片可以看到有同样的细化精确的效果。</p>
+</section>
+<section id="id23">
+<h3><span class="section-number">1.5.3. </span>5.3 双阈值判断连接边缘处理结果<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h3>
+<p>lena图片：</p>
+<table >
+   <th width="180px" >H=50, L=20</th>
+   <th width="180px">H=150, L=200</th>
+   <th width="180px">H=230, L=20</th>
+   <th width="180px">H=230, L=100</th>
+</table>
+  <center class="half">
+  <img src="image/HW1/50-20.png" title='lena双阈值连接边缘图' width=180/>
+  <img src="image/HW1/150-100.png" title='lena双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-20.png" title='lena双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-100.png" title='lena双阈值连接边缘图' width=180/>
+  </center><p>用不同的高低阈值选择，得到不同的边缘连接结果：像素点的幅值大小是0-255，当H=50，L=20时，高低阈值的选择都偏低，有大部分的边缘被确定为强边缘而保留，且更多的弱边缘被连接，基本保留了大部分上一处理结果的像素；当H=150，L=100时，小于100的像素将被抑制，因此去除了图中原本‘灰色’的内部边缘；当H=230，L=20时，高阈值被定位很高，但低阈值很低，由此将保留少部分特别强的边缘以及连接上其周围的大部分弱边缘，所以细节更少但是能保留较为完整的边缘线条；当H=230，L=100时，只有较强的像素点被保留为强边缘或可连接的弱边缘，因此几乎只有强边缘被保留，很少的较强弱边缘能被保留，因此图中形成不完整的边缘线条，几乎看不到灰色的弱边缘线条。</p>
+<p>个人图片：</p>
+<table >
+   <th width="180px" >H=50, L=20</th>
+   <th width="180px">H=150, L=200</th>
+   <th width="180px">H=230, L=20</th>
+   <th width="180px">H=230, L=100</th>
+</table>
+  <center class="half">
+  <img src="image/HW1/50-20-2.png" title='个人双阈值连接边缘图' width=180/>
+  <img src="image/HW1/150-100-2.png" title='个人双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-20-2.png" title='个人双阈值连接边缘图' width=180/>
+  <img src="image/HW1/230-100-2.png" title='个人双阈值连接边缘图' width=180/>
+  </center><p>用相同的分析方法能得到与Lena图片相同的结论，但是可以看到在lena图片，H=150，L=100可以得到一个较好的边缘检测结果，而在个人图片中，H=50，L=20会更好一些。因为不同图片的梯度范围是不同的，所需的目标边缘所处的像素值区间不同，因此想得到一个好的边缘检测结果，需要针对图片进一步调整阈值。</p>
+</section>
+<section id="id24">
+<h3><span class="section-number">1.5.4. </span>5.4 最终彩色图片<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h3>
+<p>lena图片：</p>
+  <center class="half">
+  <img src="image/HW1/lena.jpg" title='lena彩色原图' width=200/>
+  <img src="image/HW1/colorimage1.png" title='lena彩色边缘图' width=200/>
+  </center><p>将彩色图片覆盖后，得到彩色的边缘图，原边缘图中像素值存在的点被替换为彩色图片的原像素值。</p>
+<p>个人图片:</p>
+  <center class="half">
+  <img src="image/HW1/head.jpg" title='个人彩色原图' width=200/>
+  <img src="image/HW1/colorimage2.png" title='个人彩色边缘图' width=200/>
+  </center></section>
+</section>
+<section id="id25">
+<h2><span class="section-number">1.6. </span>六、结论与心得体会<a class="headerlink" href="#id25" title="Permalink to this heading"></a></h2>
+<section id="id26">
+<h3><span class="section-number">1.6.1. </span>结论<a class="headerlink" href="#id26" title="Permalink to this heading"></a></h3>
+<p>Canny算法有效地得到了一个彩色图片的边缘，实现了边缘检测。在使用Canny边缘检测算法时，有两个可调参数是双阈值检测的高低阈值，要根据实际的目标图片调整高低阈值的大小，才能得到更符合要求的边缘检测图片。</p>
+</section>
+<section id="id27">
+<h3><span class="section-number">1.6.2. </span>心得体会<a class="headerlink" href="#id27" title="Permalink to this heading"></a></h3>
+<ol class="simple">
+<li><p>在编写Canny边缘检测算法的过程中，进一步理解了算法的主要步骤及其意义。</p></li>
+<li><p>当编写图像梯度计算函数时，发现了在计算过程中要使用浮点类型的像素值，而在图片展示函数时，图片像素应为整形，因此图像的输入时，要将图像明确为float，而在函数输出图象时，应输出为int类型。</p></li>
+<li><p>双阈值连接边缘的函数编写过程中，反复思考了如何实现强边缘对弱边缘的连接，最后仍是需要用比较多的空间（两个标记矩阵）以及反复迭代的方法来实现，特别是迭代时，会有一种类似栈或树的结构的感觉。也许用C++等语言，利用链表可以更好地编写这一函数。</p></li>
+</ol>
+</section>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to ComputerVersionCourse’s documentation!" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="HW2.html" class="btn btn-neutral float-right" title="2. 编程实现多张图片的自动拼接" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Zhanfeng Xu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

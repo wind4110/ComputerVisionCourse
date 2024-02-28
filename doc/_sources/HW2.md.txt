@@ -1,0 +1,272 @@
+# 编程实现多张图片的自动拼接
+
+姓名：许展风 			学号：3210100658
+
+电子邮箱：zhanfeng_xu@outlook.com  		 联系电话：15224131655
+
+老师：潘纲老师			报告日期：2023年12月4日
+
+## 一、功能简述及运行说明
+
+### 1.1 功能简述
+
+对输入的多张彩色图像，通过算法实现多张图片的拼接。
+
+### 1.2 运行说明
+
+程序运行后，第一步根据提示输入待拼接的图片数量，第二步依次输入图片路径，第三步输入输出图片名称。回车后程序运行，并输出最后一步图片拼接的中间过程，以及最终所有图片的拼接结果。
+
+
+
+## 二、开发与运行环境
+
+编程语言：python 3.10.6
+
+编程环境：VScode+Jupyter Notebook
+
+运行环境：Windows
+
+## 三、算法原理
+
+### 3.1 算法流程图
+
+```mermaid
+graph LR
+    A[彩色图片1]
+    B[彩色图片2]
+    A --> C[特征点提取]
+    B --> C
+    C --> D[图像配准]
+    D --> E[计算透视变换矩阵H]
+    E --> F[图像变形]
+    F --> G[图像融合]
+
+```
+
+### 3.2 具体原理介绍
+
+#### 1.  特征点提取
+
+通过特殊算法检测输入图像的特征点，这些特征可能包括某些方向的极值点，它们不受图像的尺度缩放、亮度变化所影响，是一个稳定的特征。
+
+#### 2.  特征点匹配
+
+利用图像的特征点建立图像特征点之间的对应，匹配两张图片相同的部分。
+
+#### 3.  计算透视变换矩阵H
+
+利用匹配的特征点，建立图像之间的几何对应关系，使它们可以在一个共同参照系中进行变换、比较和分析。
+
+#### 4. 图像变形
+
+利用变换矩阵H对其中一张图像作透视变换，使得两张图像变为同一参照系。
+
+#### 5. 图像融合
+
+变形后的图像可以直接拼接，也可以通过改变边界附近图像的灰度，使得图像在缝隙处平滑过渡。
+
+## 四、具体实现
+
+### 4.1 特征点提取
+
+```python
+    # sift特征点计算
+    sift = cv2.SIFT_create()
+    kp1, des1 = sift.detectAndCompute(imgGray1, None)
+    kp2, des2 = sift.detectAndCompute(imgGray2, None)
+```
+
+使用SIFT算法提取图片特征点，SIFT的全称是Scale Invariant Feature Transform，尺度不变特征变换，SIFT特征对旋转、尺度缩放、亮度变化等保持不变性，是一种非常稳定的局部特征。[2]
+
+
+
+### 4.2 特征点匹配
+
+```python
+    # 对应特征点配对
+    bf = cv2.BFMatcher(cv2.NORM_L2)
+    matches = bf.knnMatch(des1, des2, k=2)
+
+    goodMatch = []  # 配对点集合，用于画图
+    good = []  # 配对点坐标序号集合， 用于后续求变换矩阵
+    for m, n in matches:
+        if m.distance < 0.75 * n.distance:
+            goodMatch.append(m)
+            good.append((m.trainIdx, m.queryIdx))
+```
+
+ cv2.BFMatcher是openCV库中的一种匹配器，Brute-Force蛮力匹配器，该匹配器将两组中的所有特征点进行匹配，返回距离最近的匹配项。再将蛮力匹配得到的结果进行筛选，当最近距离与次近距离的比值小于ratio值时的配对保留。存储保留配对的索引值，便于后续索引。
+
+另一种匹配器为FLANN匹配器，它利用最近邻搜索的优化算法，可以在大型数据集中拥有比BF匹配器更快的运算速度，在本实验中没有必要使用。
+
+
+
+### 4.3 计算透视变换矩阵H
+
+```python
+    # 求变换矩阵
+    pts1 = np.float32([kp1[i].pt for (_, i) in good])
+    pts2 = np.float32([kp2[i].pt for (i, _) in good])
+    H, status = cv2.findHomography(pts1, pts2, cv2.RANSAC, 4.0)
+```
+
+利用保留匹配点的索引提取匹配点的坐标，利用cv2.findHomography函数计算单应性矩阵，使用RANSAC方法。
+
+
+
+
+
+### 4.4 图像变形与融合
+
+```python
+    # 用变换矩阵对imga作透视变换
+    tranRes = cv2.warpPerspective(img1, H, (img1.shape[1], img1.shape[0]))
+    # 透视变换后的图片拼接上imgb
+    tranRes[th:imgb.shape[0] + th, tw:imgb.shape[1] + tw] = imgb
+```
+
+利用计算得到的矩阵H作为透视变换矩阵，使用透视变换函数对图片1作透视变换。
+
+
+
+在算法实现过程中，可以发现对图片1作透视变换后，图片1会发生包括平移在内的变换，其结果是图片1中与图片2特征对应的位置得到重合，此时直接将图片2覆盖在图片1，即可直接得到混合图片。当使用Yosemite图片作为样本时，会发现实际上图片1会变换后左移，而移动出画布的范围造成变换后信息的缺失。如下图中绿色的区域被丢失。[3]为了解决这个问题，可以扩大初始图片的画布，
+
+![在这里插入图片描述](https://img-blog.csdn.net/20160623114046887#pic_center)
+
+```python
+ # 由于透视变换将imga图片进行平移、旋转等等操作，所以需要扩大图像画布，避免信息丢失
+    tw = np.int16(np.max([imga.shape[1], imgb.shape[1]]))  # 确定宽度平移量
+    th = np.int16(np.max([imga.shape[0], imgb.shape[0]]))  # 确定高度平移量
+
+    M = np.float32([[1, 0, tw], [0, 1, th]])  # 构造平移变换矩阵
+    img1 = cv2.warpAffine(imga, M,
+                          (imga.shape[1] + 2 * tw,
+                           imga.shape[0] + 2 * th))  # 变换后，保证了图像的最大尺度变换下信息不丢失
+    img2 = cv2.warpAffine(imgb, M,
+                          (imga.shape[1] + 2 * tw,
+                           imga.shape[0] + 2 * th))  # 对imgb作同样处理，便于后续图片直接原位置拼接
+```
+
+因此在程序中对输入图片使用平移变换，扩大画布的同时平移图片至中央，此时考虑到图片最大尺度的透视变换，只要两个方向都留足原本图像的大小，就能保证图像不丢失。此时图片混合方法需要将原大小的图片2放入变换后图片1的中央。此时得到的最终结果将保留大片区域的黑边，因为扩大了画布，因此可以再通过截取的方法出去黑边。算法如下：
+
+```python
+def removeBlack(blackim):
+    '''去除图像黑边
+
+    :blackim: 输入图像
+    :res_image: 输出图像
+    '''
+    blackimgGray = cv2.cvtColor(blackim, cv2.COLOR_BGR2GRAY)  # 转为灰度图像
+    edges_y, edges_x = np.where(blackimgGray != 0)  # 求非黑的有效区域
+    bottom = min(edges_y)
+    top = max(edges_y)
+    height = top - bottom  # 求有效区域的最大高度
+
+    left = min(edges_x)
+    right = max(edges_x)
+    width = right - left  # 求有效区域的最小宽度
+
+    res_image = blackim[bottom:bottom + height, left:left + width]  # 裁剪出有效区域
+    return res_image
+```
+
+
+
+## 五、实验结果与分析
+
+### 5.1 特征点提取结果
+
+<center class="half">
+<img src="image/HW2/Siftmatch1a.jpg"  width=300/>
+<img src="image/HW2/Siftmatch1b.jpg"  width=300/>
+</center>
+
+使用了扩大画布的方法后，提取特征点时计算会收到一定的影响，但是可以看到大部分的特征点是能提取到目标图片内部的，因此对最终结果影响较小。
+
+
+
+### 5.2 特征点匹配结果
+
+<center class="half">
+<img src="image/HW2/Matchmatch1.jpg" width=1200/>
+</center>
+
+图中显示了前100个匹配点结果，依然能看到有部分的特征点匹配收到影响，但是由于匹配到的有效配对点有很多，依然对最终的变换矩阵影响较小。
+
+
+
+### 5.3 图片变换与混合
+
+<center class="half">
+<img src="image/HW2/Resmatch1.jpg" width=600/>
+</center>
+
+图片1 变换后与图片2叠加，去黑边处理后，可以发现相同的部分能够充分重叠，只是分界处有灰度级的区别，因此有分界线痕迹。
+
+
+
+#### 5.4 多张图片拼接
+
+<center class="half">
+      <img src="image/HW2/Resmatch2.jpg" title='个人彩色原图' width=700/>
+      <img src="image/HW2/Resmatch3.jpg" title='个人彩色原图' width=700/>
+</center>
+
+
+最终得到多张图片拼接结果，可以发现在位置上能够得到充分混合，而在灰度级上还有较明显的区别。
+
+
+
+### 5.5 使用个人图片效果
+
+  <center class="half">
+  <img src="image/HW2/room1.jpg" width=200/>
+  <img src="image/HW2/room2.jpg" width=200/>
+  <img src="image/HW2/room3.jpg" width=200/>
+  <img src="image/HW2/room4.jpg" width=200/>
+  <img src="image/HW2/room5.jpg" width=200/>
+  </center>
+
+待拼接的5张图片原图如上，是在西教用手机拍摄的五张照片。拼接的效果如下。
+
+
+
+  <center class="half">
+  <img src="D:\VS\vscode-py310\Resname.jpg" width=500/>
+  </center>
+
+可以看到拼接结果是正确的，通过墙与地面的接缝的笔直情况判断出拼接的效果是好的，它以第3张图片视角为主视角，将其他图片实现了变换拼接。由于是近景，拍摄时视角的转向比较大，所以拼接时变换的程度也大，对应视角的剧烈变化。同时可以发现，由于手机摄影亮度自动调节的关系，第一张图片与其他图片有明显不一样的亮度，从拼接结果也能明显的看出来。
+
+
+
+
+## 六、结论与心得体会
+
+### 结论
+
+该程序能够基本完成图像拼接的任务。
+
+在两方面有一定的瑕疵，其一是扩大画布避免信息丢失的方法，对特征点的检测和匹配存在一定的影响。且处理大图像时将消耗大量的空间存储图像信息。如果对于输入的图像有先验的透视变换的尺度和方向的估计，可以特定的对画布进行合适大小的扩大，一定程度上节省空间。
+
+另一方面是由于图像噪声、光照曝光度、模型匹配误差等因素，直接的图像拼接后，重叠区域的拼接处会出现比较明显的边痕迹[4]，这个问题一般通过multi-band bleing算法来解决。采用的方法是直接对带拼接的两个图片进行拉普拉斯金字塔分解，后一半对前一半进行融合。由于时间及复杂度问题没能完成。
+
+
+
+### 心得体会
+
+1.  图像拼接原理涉及到的算法很多很复杂，例如包括sirf特征点提取算法、单应性矩阵求解算法等等，在这个程序里都直接用openCV中的函数实现了。但是对于图像拼接的一般流程有了充分的熟悉与掌握。
+2.  实验时最大困难是变换后信息丢失的问题，其实解决这个问题角度考虑了三个，一是从一开始改变画布，也就是程序最终采用的方法；二是在透视变换时增大显示范围，但是这个操作是直接用一个函数实现的，难以直接调整；三是改变矩阵H，但不清楚改变H后，对于重叠部分是否还重叠的影响，也没有采用。
+
+3.  编程时参考了较多CSDN上的文章与程序，但没有对程序完全照搬，也没有任何程序能够直接搬进来就可以用，都得在理解的基础上进行修改调试，有些文献参考的是原理介绍，有些参考了问题解决的思路，编程的方法与思路。
+
+
+
+## 七、参考文献
+
+[1],  [纸箱里的猫咪](https://blog.csdn.net/Thousand_drive), Opencv实战——图像拼接, [OL], CSDN,  2022-06-06, [2023-12-04], https://blog.csdn.net/Thousand_drive/article/details/125084810
+
+[2], [阿飞大魔王](https://blog.csdn.net/lucifer_24), 图像特征点提取（SIFT，SURF，ORB）, [OL]， CSDN, 2019-03-26, [2023-12-04], https://blog.csdn.net/lucifer_24/article/details/88823448
+
+[3], [牛牛牛叶](https://blog.csdn.net/xiaoyeer666), 解决透视变换后图片信息丢失的问题，附程序,  [OL]， CSDN，2020-08-13，[2023-12-04], https://blog.csdn.net/xiaoyeer666/article/details/107973505
+
+[4], [LiaoNanan](https://blog.csdn.net/LIAO_0312)，Python计算机视觉（三）—— 全景图像拼接， [OL]， CSDN，2022-04-27，[2023-12-04], https://blog.csdn.net/LIAO_0312/article/details/124460671

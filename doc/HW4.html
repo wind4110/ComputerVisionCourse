@@ -1,0 +1,493 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4. 编程实现 LeNet 的训练和 U-Net 的补全及测试 &mdash; ComputerVersionCourse 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="5. 精灵宝可梦类型预测任务" href="HW5.html" />
+    <link rel="prev" title="3. 写代码实现Eigenface人脸识别的训练、识别、重构过程" href="HW3.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ComputerVersionCourse
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="HW1.html">1. Canny边缘检测算法实现</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW2.html">2. 编程实现多张图片的自动拼接</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW3.html">3. 写代码实现Eigenface人脸识别的训练、识别、重构过程</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">4. 编程实现 LeNet 的训练和 U-Net 的补全及测试</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">4.1. 一、功能简述及运行说明</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">4.1.1. 1.1 功能简述</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">4.1.2. 1.2 运行说明</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">4.2. 二、开发与运行环境</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">4.3. 三、算法原理</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#cnn">4.3.1. 3.1 CNN网络模型</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id6">4.3.1.1. 卷积层</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id7">4.3.1.2. 池化层</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#lenet-5">4.3.1.3. LeNet-5</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#u-net">4.3.1.4. U-Net</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id8">4.3.1.5. 数据集</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id9">4.3.2. 3.2 网络训练与测试</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#forward">4.3.2.1. 正向传播（forward）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#backpropagation-bp">4.3.2.2. 反向传播（Backpropagation，BP）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#optimizer">4.3.2.3. 优化器（Optimizer）</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#loss-function">4.3.2.4. 损失函数（Loss Function）</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id10">4.4. 四、具体实现</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id11">4.4.1. 4.1 LeNet-5 的训练</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id12">4.4.1.1. 构建网络</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id13">4.4.1.2. 载入数据</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id14">4.4.1.3. 其他函数构建</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id15">4.4.1.4. 模型训练与测试</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">4.4.2. 4.2 U-Net补全与测试</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id17">4.4.2.1. 测试预处理</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id18">4.5. 五、实验结果与分析</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id19">4.5.1. 5.1 LeNet-5</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id20">4.5.2. 5.2 U-Net补全与测试</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id21">4.6. 六、结论与心得体会</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id22">4.6.1. 结论</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id23">4.6.2. 心得体会</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id24">4.7. 七、参考文献</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="HW5.html">5. 精灵宝可梦类型预测任务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="review.html">6. 计算机视觉复习</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ComputerVersionCourse</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">4. </span>编程实现 LeNet 的训练和 U-Net 的补全及测试</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/HW4.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="lenet-u-net">
+<h1><span class="section-number">4. </span>编程实现 LeNet 的训练和 U-Net 的补全及测试<a class="headerlink" href="#lenet-u-net" title="Permalink to this heading"></a></h1>
+<p>姓名：许展风 			学号：3210100658</p>
+<p>电子邮箱：zhanfeng_xu&#64;outlook.com  		 联系电话：15224131655</p>
+<p>老师：潘纲老师			报告日期：2023年12月29日</p>
+<section id="id1">
+<h2><span class="section-number">4.1. </span>一、功能简述及运行说明<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<section id="id2">
+<h3><span class="section-number">4.1.1. </span>1.1 功能简述<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<ol class="simple">
+<li><p>实现LeNet-5 的训练，应用于 MNIST 数据集上的手写数字识别任务（图像分类）</p></li>
+<li><p>实现U-Net 的网络补全与测试，应用于<a class="reference external" href="https://www.kaggle.com/competitions/carvana-image-masking-challenge/data"> Carvana 数据集</a>上的掩码 (Mask) 预测任务（语义分割）</p></li>
+</ol>
+</section>
+<section id="id3">
+<h3><span class="section-number">4.1.2. </span>1.2 运行说明<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+<ol class="simple">
+<li><p>运行lenet.py文件，程序实现LeNet-5的构建，并在MNIST数据集上进行训练和测试，命令行同步输出训练和测试过程，运行完成后保存训练过程的loss曲线与识别率曲线，以及测试过程的识别率曲线图。</p></li>
+<li><p>运行try.py文件，程序实现U-Net的构建，并加载默认路径下的模型model.pth，输入默认路径下的图片，进行单图片测试，输出图片的预测掩码图。</p></li>
+</ol>
+</section>
+</section>
+<section id="id4">
+<h2><span class="section-number">4.2. </span>二、开发与运行环境<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h2>
+<p>编程语言：python 3.10.6   torch  2.0.1+cu118   torchvision  0.15.2+cu118</p>
+<p>运行环境：Windows</p>
+</section>
+<section id="id5">
+<h2><span class="section-number">4.3. </span>三、算法原理<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h2>
+<section id="cnn">
+<h3><span class="section-number">4.3.1. </span>3.1 CNN网络模型<a class="headerlink" href="#cnn" title="Permalink to this heading"></a></h3>
+<p>卷积神经网络（Convolutional Neural Network，CNN）是一种包含卷积运算且具有深度结构的前馈神经网络（Feedforward Neural Network，FNN），被广泛应用于图像识别、自然语言处理和语音识别等领域。一般包含5种类型的网络层次结构：</p>
+<ul class="simple">
+<li><p>输入层：卷积网络的原始输入，可以是原始或预处理后的像素矩阵。</p></li>
+<li><p>卷积层：参数共享、局部连接，利用平移不变性从全局特征图提取局部特征。</p></li>
+<li><p>激活层：将卷积层的输出结果进行非线性映射。</p></li>
+<li><p>池化层：进一步筛选特征，可以有效减少后续网络层次所需的参数量。</p></li>
+<li><p>全连接层：将多维特征展平为二维特征，通常低维度特征对应任务的学习目标（类别或回归值）。</p></li>
+</ul>
+<section id="id6">
+<h4><span class="section-number">4.3.1.1. </span>卷积层<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h4>
+<p>卷积层中需要用到卷积核（滤波器或特征检测器）与图像特征矩阵进行点乘运算，利用卷积核与对应的特征感受野进行滑窗式运算时，需要设定卷积核对应的大小、步长、个数以及填充的方式。</p>
+<ul class="simple">
+<li><p>卷积核大小（Kernel Size)：定义了卷积的感受域。在过去常设为5，如LeNet-5；现在多设为3，通过堆叠3*3的卷积核来达到更大的感受域。</p></li>
+<li><p>卷积核步长（Stride）：定义了卷积核在卷积过程中的步长。常见设置为1，表示滑窗距离为1，可以覆盖所有相邻位置特征的组合；当设置为更大值时相当于对特征组合降采样。</p></li>
+<li><p>填充方式（Padding）：在卷积核尺寸不能完美匹配输入的图像矩阵时需要进行一定的填充策略。通常为零填充或者舍去。</p></li>
+</ul>
+</section>
+<section id="id7">
+<h4><span class="section-number">4.3.1.2. </span>池化层<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h4>
+<p>对于池化层，最大池化（Max Pooling）和平均池化（Average Pooling）是常用的池化操作，用于减少特征图的尺寸，并提取最显著的特征。</p>
+<ul class="simple">
+<li><p>最大池化：在每个池化窗口中选择最大值作为输出，可以保留图像区域最显著的特征，对于<strong>边缘检测</strong>和<strong>纹理分析</strong>等任务可能更有效。</p></li>
+<li><p>平均池化：它选择窗口内所有值的平均值，因此更多地考虑整个区域的信息，对图像的全局特征进行了平均处理，对于一些要求更多上下文信息的任务，如<strong>目标识别</strong>更加有用。</p></li>
+</ul>
+</section>
+<section id="lenet-5">
+<h4><span class="section-number">4.3.1.3. </span>LeNet-5<a class="headerlink" href="#lenet-5" title="Permalink to this heading"></a></h4>
+<p>LeNet-5 是由 Yann LeCun 在 1998 年提出的一个经典卷积神经网络（CNN）架构，它是用于手写数字识别任务的早期深度学习模型之一。其架构包含了卷积层、池化层和全连接层。</p>
+<p><img alt="How to Train a Model with MNIST dataset | by Abdullah Furkan Özbek | Medium" src="https://zhoutimemachine.github.io/2023_CV/graph/LeNet.jpg" /></p>
+</section>
+<section id="u-net">
+<h4><span class="section-number">4.3.1.4. </span>U-Net<a class="headerlink" href="#u-net" title="Permalink to this heading"></a></h4>
+<p><a class="reference external" href="https://en.wikipedia.org/wiki/U-Net">U-Net </a>是一个经典的语义分割全卷积网络，最初应用于医疗图像的分割任务。其网络结构如下图所示，可以看到 U-Net 有一个对称的结构，左边是一个典型的卷积神经网络，右边是一个对称的上采样网络，可以将左边的特征图恢复到原图大小。</p>
+<ul class="simple">
+<li><p>左侧向下的结构被称为 Contracting Path，由通道数不断增加的卷积层和池化层组成</p></li>
+<li><p>右侧向上的结构被称为 Expanding Path，由通道数不断减少的卷积层和上采样层（反卷积层）组成</p></li>
+<li><p>在 Expanding Path 中，每次上采样层都会将 Contracting Path 中对应的特征图与自身的特征图进行拼接，这样可以保证 Expanding Path 中的每一层都能够利用 Contracting Path 中的信息</p></li>
+</ul>
+</section>
+<section id="id8">
+<h4><span class="section-number">4.3.1.5. </span>数据集<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h4>
+<p>MNIST 数据集是一个常用的机器学习基准数据集，由 0 到 9 的手写数字图像组成，每个图像都是 28x28 像素的灰度图像。<code class="docutils literal notranslate"><span class="pre">torchvision.datasets.MNIST</span></code> 模块提供了一种简单的方式来下载、加载和预处理 MNIST 数据集，使其能够被用于训练和测试深度学习模型。这个模块一般与 PyTorch 的 DataLoader 结合使用，以便对数据进行批处理、洗牌等操作，并将数据提供给神经网络模型进行训练或评估。</p>
+<p>Carvana 数据集是<a class="reference external" href="https://www.kaggle.com/"> kaggle </a>上的一个语义分割竞赛数据集，目标是实现对汽车的分割。根据 Carvana 数据集的划分，其训练集包含 5088 张汽车图片 (.jpg) 和对应的掩码 (mask, .gif)，掩码可以认为是 0-1 的，表示图片上每个像素是否属于汽车。因此这个问题可以处理成逐像素的二分类问题。</p>
+</section>
+</section>
+<section id="id9">
+<h3><span class="section-number">4.3.2. </span>3.2 网络训练与测试<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h3>
+<section id="forward">
+<h4><span class="section-number">4.3.2.1. </span>正向传播（forward）<a class="headerlink" href="#forward" title="Permalink to this heading"></a></h4>
+<p>正向传播是指对神经网络沿着从输入层到输出层的顺序，依次计算并存储模型的中间变量（包括输出）。</p>
+</section>
+<section id="backpropagation-bp">
+<h4><span class="section-number">4.3.2.2. </span>反向传播（Backpropagation，BP）<a class="headerlink" href="#backpropagation-bp" title="Permalink to this heading"></a></h4>
+<p>反向传播（Backpropagation，BP）是“误差反向传播”的简称，是一种与最优化方法（如梯度下降法）结合使用的，用来训练人工神经网络的常见方法。该方法对网络中所有权重计算损失函数的梯度。这个梯度会反馈给最优化方法，用来更新权值以最小化损失函数。</p>
+</section>
+<section id="optimizer">
+<h4><span class="section-number">4.3.2.3. </span>优化器（Optimizer）<a class="headerlink" href="#optimizer" title="Permalink to this heading"></a></h4>
+<p>optimizer 对象够保持当前参数状态并基于计算得到的梯度进行参数更新。在 PyTorch 中，可以使用 <code class="docutils literal notranslate"><span class="pre">torch.optim</span></code> 模块来创建优化器对象，用于更新神经网络模型的参数，以最小化定义的损失函数。<code class="docutils literal notranslate"><span class="pre">torch.optim</span></code> 包含了许多常用的优化算法，比如 SGD、Adam、RMSprop 等。</p>
+<ul>
+<li><p>随机梯度下降优化器（SGD）：基本的优化算法之一。它通过计算当前样本的梯度来更新模型的参数，每次迭代仅考虑一个样本的梯度。SGD的核心思想是沿着梯度的反方向更新参数，以减小损失函数。然而，SGD可能会<strong>收敛速度较慢</strong>，并且可能在参数空间中摆动。</p>
+<p>参数：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">learning_rate</span></code>（学习率）：控制每次参数更新的步长大小。默认值为0.01。学习率的选择对模型的收敛和性能至关重要。如果学习率过大，可能会导致震荡或无法收敛；如果学习率过小，收敛速度可能很慢。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">momentum</span></code>（动量）：用于加速SGD在相关方向上的移动，避免陷入局部极小值。通常设置在0.9左右。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">dampening</span></code>（阻尼项）：动量的阻尼系数，用于减少动量的影响。通常默认为0。</p></li>
+</ul>
+</li>
+<li><p>自适应矩估计（Adam）：是一种结合了动量和自适应学习率调整的优化算法，通过计算梯度的一阶矩估计和二阶矩估计来动态调整学习率。Adam能够根据梯度的大小自适应地调整每个参数的学习率，因此对于不同参数的学习率可以有不同的变化。</p></li>
+</ul>
+<p>参数：</p>
+<ul class="simple">
+<li><p><code class="docutils literal notranslate"><span class="pre">learning_rate</span></code>（学习率）：控制参数更新的步长大小。默认值为0.001。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">betas</span></code>（动量项的衰减因子）：通常设置为<code class="docutils literal notranslate"><span class="pre">(0.9,</span> <span class="pre">0.999)</span></code>，用于计算梯度的一阶矩估计（均值）和二阶矩估计（方差）。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">eps</span></code>（数值稳定性）：用于避免除以零的情况。默认值为1e-8。</p></li>
+<li><p><code class="docutils literal notranslate"><span class="pre">weight_decay</span></code>（权重衰减）：L2正则化的参数，用于对模型参数进行惩罚，防止过拟合。默认值为0。</p></li>
+</ul>
+</section>
+<section id="loss-function">
+<h4><span class="section-number">4.3.2.4. </span>损失函数（Loss Function）<a class="headerlink" href="#loss-function" title="Permalink to this heading"></a></h4>
+<p>用于衡量模型预测值与实际值之间的差异，它是机器学习模型优化过程中的核心部分。损失函数的选择影响着模型的训练效果和最终的性能。其目标是尽量减小预测值与实际值之间的差异，从而使模型能够更好地拟合训练数据并提高泛化能力。在 PyTorch 中，定义损失函数主要通过 <code class="docutils literal notranslate"><span class="pre">torch.nn</span></code> 模块下的各种损失函数类来完成。</p>
+<ul class="simple">
+<li><p>均方误差（Mean Squared Error, MSE)：它计算预测值与真实值之间差的平方的均值。</p></li>
+<li><p>交叉熵损失（Cross Entropy Loss)：常用于分类任务中，特别是多类别分类问题。对于二分类问题，使用二元交叉熵，对于多分类问题，使用多元交叉熵。</p></li>
+<li><p>KL散度（Kullback-Lerbler Divergence）：KL散度用于度量两个概率分布之间的差异，通常在模型训练过程中作为正则化项使用。</p></li>
+</ul>
+</section>
+</section>
+</section>
+<section id="id10">
+<h2><span class="section-number">4.4. </span>四、具体实现<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h2>
+<section id="id11">
+<h3><span class="section-number">4.4.1. </span>4.1 LeNet-5 的训练<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h3>
+<section id="id12">
+<h4><span class="section-number">4.4.1.1. </span>构建网络<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 定义 LeNet-5 神经网络结构模型</span>
+<span class="k">class</span> <span class="nc">Model</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">Model</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>  <span class="c1"># 利用参数初始化父类</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">6</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avgpool1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">AvgPool2d</span><span class="p">(</span><span class="n">kernel_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conv2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Conv2d</span><span class="p">(</span><span class="mi">6</span><span class="p">,</span> <span class="mi">16</span><span class="p">,</span> <span class="n">kernel_size</span><span class="o">=</span><span class="mi">5</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">avgpool2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">AvgPool2d</span><span class="p">(</span><span class="n">kernel_size</span><span class="o">=</span><span class="mi">2</span><span class="p">,</span> <span class="n">stride</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fullconnection1</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">16</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span><span class="p">,</span> <span class="mi">120</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fullconnection2</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">120</span><span class="p">,</span> <span class="mi">84</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">fullconnection3</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">Linear</span><span class="p">(</span><span class="mi">84</span><span class="p">,</span> <span class="mi">10</span><span class="p">)</span>
+
+    <span class="c1"># 定义前向传播</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">):</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">avgpool1</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv1</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">avgpool2</span><span class="p">(</span><span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">conv2</span><span class="p">(</span><span class="n">x</span><span class="p">)))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">view</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">16</span> <span class="o">*</span> <span class="mi">4</span> <span class="o">*</span> <span class="mi">4</span><span class="p">)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fullconnection1</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">relu</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">fullconnection2</span><span class="p">(</span><span class="n">x</span><span class="p">))</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">fullconnection3</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">x</span>
+
+</pre></div>
+</div>
+<p>在构建网络结构时，需要特别注意的是每层结构的具体参数，在关注计算核、步长的选取时，还要注意输入输出的维度，需要前后对应。<code class="docutils literal notranslate"><span class="pre">x</span> <span class="pre">=</span> <span class="pre">x.view(-1,</span> <span class="pre">16</span> <span class="pre">*</span> <span class="pre">4</span> <span class="pre">*</span> <span class="pre">4)</span></code>用于将张量展平。</p>
+</section>
+<section id="id13">
+<h4><span class="section-number">4.4.1.2. </span>载入数据<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 定义数据预处理</span>
+<span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">()</span>
+<span class="c1"># 下载数据到指定位置</span>
+<span class="n">trainset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span><span class="n">root</span><span class="p">,</span>
+                          <span class="n">train</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                          <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+                          <span class="n">target_transform</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                          <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">testset</span> <span class="o">=</span> <span class="n">datasets</span><span class="o">.</span><span class="n">MNIST</span><span class="p">(</span><span class="n">root</span><span class="p">,</span>
+                         <span class="n">train</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                         <span class="n">transform</span><span class="o">=</span><span class="n">transform</span><span class="p">,</span>
+                         <span class="n">target_transform</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+                         <span class="n">download</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="c1"># 提取数据</span>
+<span class="n">train_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">trainset</span><span class="p">,</span>
+                                           <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                                           <span class="n">shuffle</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="n">test_loader</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">utils</span><span class="o">.</span><span class="n">data</span><span class="o">.</span><span class="n">DataLoader</span><span class="p">(</span><span class="n">testset</span><span class="p">,</span>
+                                          <span class="n">batch_size</span><span class="o">=</span><span class="mi">64</span><span class="p">,</span>
+                                          <span class="n">shuffle</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>数据预处理可以包括转张量、归一化等操作，提取数据时，几个参数需要注意：</p>
+<ul class="simple">
+<li><p>batch_size指在深度学习中用于训练的每个<strong>小批量</strong>（mini-batch）样本的数量。合适的大小可以缓解内存压力、提高训练速度与模型泛化能力。</p></li>
+<li><p>shuffle，用于指示在每个 epoch 开始时是否对数据进行<strong>随机打乱</strong>。它控制着在每个 epoch 开始时是否对数据进行<strong>重新排序</strong>，以避免模型每次都在相同的顺序下进行训练。</p></li>
+</ul>
+</section>
+<section id="id14">
+<h4><span class="section-number">4.4.1.3. </span>其他函数构建<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 实例化模型</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">Model</span><span class="p">()</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+
+<span class="c1"># 实例化损失函数</span>
+<span class="n">criterion</span> <span class="o">=</span> <span class="n">nn</span><span class="o">.</span><span class="n">CrossEntropyLoss</span><span class="p">()</span>  <span class="c1"># 交叉熵损失，用于多分类问题</span>
+
+<span class="c1"># 构建优化器</span>
+<span class="n">optimizer</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">optim</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">model</span><span class="o">.</span><span class="n">parameters</span><span class="p">(),</span> <span class="n">lr</span><span class="o">=</span><span class="mf">0.001</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>在这里，可以定义损失函数、优化器模型，可以设置模型的学习率lr。</p>
+</section>
+<section id="id15">
+<h4><span class="section-number">4.4.1.4. </span>模型训练与测试<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">for</span> <span class="n">epoch</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">num_epochs</span><span class="p">):</span>
+    <span class="k">for</span> <span class="n">batch_index</span><span class="p">,</span> <span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">train_loader</span><span class="p">):</span>
+        <span class="c1"># 数据装载</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+        <span class="c1"># 训练</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">zero_grad</span><span class="p">()</span>  <span class="c1"># 梯度清零</span>
+        <span class="n">y_pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>  <span class="c1"># 正向传播</span>
+        <span class="n">loss</span> <span class="o">=</span> <span class="n">criterion</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="n">targets</span><span class="p">)</span>  <span class="c1"># 计算损失</span>
+        <span class="n">loss</span><span class="o">.</span><span class="n">backward</span><span class="p">()</span>  <span class="c1"># 反向传播计算损失函数梯度</span>
+        <span class="n">optimizer</span><span class="o">.</span><span class="n">step</span><span class="p">()</span>  <span class="c1"># 更新参数</span>
+        <span class="c1"># 记录当前的识别率</span>
+        <span class="n">_</span><span class="p">,</span> <span class="n">prediction</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">y_pred</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+        <span class="n">train_percents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">prediction</span> <span class="o">==</span> <span class="n">targets</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">))</span>
+    <span class="c1"># 每次训练结束，保存最终识别率</span>
+    <span class="n">train_accuracy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">train_percents</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">train_percents</span><span class="p">))</span>
+
+    <span class="c1"># 每次训练后进行测试</span>
+    <span class="n">test_percents</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 用于记录每batch测试的识别率</span>
+    <span class="k">with</span> <span class="n">torch</span><span class="o">.</span><span class="n">no_grad</span><span class="p">():</span>
+        <span class="k">for</span> <span class="n">data</span><span class="p">,</span> <span class="n">targets</span> <span class="ow">in</span> <span class="n">test_loader</span><span class="p">:</span>
+            <span class="c1"># 数据装载</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="n">targets</span> <span class="o">=</span> <span class="n">targets</span><span class="o">.</span><span class="n">to</span><span class="p">(</span><span class="n">device</span><span class="p">)</span>
+            <span class="c1"># 正向传播</span>
+            <span class="n">test_y_pred</span> <span class="o">=</span> <span class="n">model</span><span class="p">(</span><span class="n">data</span><span class="p">)</span>
+            <span class="c1"># 记录识别率</span>
+            <span class="n">_</span><span class="p">,</span> <span class="n">test_prediction</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">test_y_pred</span><span class="p">,</span> <span class="mi">1</span><span class="p">)</span>
+            <span class="n">test_percents</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                <span class="n">torch</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">test_prediction</span> <span class="o">==</span> <span class="n">targets</span><span class="p">)</span><span class="o">.</span><span class="n">item</span><span class="p">()</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">targets</span><span class="p">))</span>
+    <span class="c1"># 每次测试结束，保存最终的识别率</span>
+    <span class="n">test_accuracy</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">sum</span><span class="p">(</span><span class="n">test_percents</span><span class="p">)</span> <span class="o">/</span> <span class="nb">len</span><span class="p">(</span><span class="n">test_percents</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>训练与测试的核心代码如上，两个循环，循环epoch，指训练次数，由于训练集的提取是shuffer随机打乱后的，多次训练能够不断优化网络参数；循环batch，是按批次训练或测试数据，此时我们选择每batch梯度清零，就要在batch循环内更新参数，如果选择每batch梯度叠加，则相当于将小批次合成大批次，需要合理调整模型更新、梯度清零的时机。</p>
+<p>识别率的提取通过<code class="docutils literal notranslate"><span class="pre">_,</span> <span class="pre">test_prediction</span> <span class="pre">=</span> <span class="pre">torch.max(test_y_pred,</span> <span class="pre">1)</span></code>在第二个维度上提取最大值的序号，作为输出类别标签，与数据集中的标签对比得到识别率。</p>
+</section>
+</section>
+<section id="id16">
+<h3><span class="section-number">4.4.2. </span>4.2 U-Net补全与测试<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">class</span> <span class="nc">CropAndConcat</span><span class="p">(</span><span class="n">nn</span><span class="o">.</span><span class="n">Module</span><span class="p">):</span>
+    <span class="k">def</span> <span class="nf">forward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">contracting_x</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+<span class="w">        </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">        :param x: current feature map in the expansive path</span>
+<span class="sd">        :param contracting_x: corresponding feature map from the contracting 	     path</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">b</span><span class="p">,</span> <span class="n">c</span><span class="p">,</span> <span class="n">h</span><span class="p">,</span> <span class="n">w</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">shape</span>
+        <span class="c1"># TODO: Concatenate the feature maps</span>
+        <span class="c1"># use torchvision.transforms.functional.center_crop(...)</span>
+        <span class="n">x</span> <span class="o">=</span> <span class="n">torch</span><span class="o">.</span><span class="n">cat</span><span class="p">((</span><span class="n">x</span><span class="p">,</span> <span class="n">center_crop</span><span class="p">(</span><span class="n">contracting_x</span><span class="p">,</span> <span class="p">(</span><span class="n">h</span><span class="p">,</span> <span class="n">w</span><span class="p">))),</span> <span class="n">dim</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">x</span>
+</pre></div>
+</div>
+<p>U-Net网络最关键的拼接函数，根据网络结构描述可知，拼接时是按通道数（channel）这一维度拼接，对应张量的dim=1的维度，同时contracting path的张量需要从中心裁切为和x相同的大小，对应（h,w）的维度。同时注意拼接的位置，x在左。</p>
+<p>剩余的结构不全只需关注参数设置，以及forward传递时，保留待拼接的张量。按网络结构顺序编写即可。</p>
+<section id="id17">
+<h4><span class="section-number">4.4.2.1. </span>测试预处理<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h4>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 定义预处理</span>
+    <span class="n">transform</span> <span class="o">=</span> <span class="n">transforms</span><span class="o">.</span><span class="n">Compose</span><span class="p">(</span>
+        <span class="p">[</span><span class="n">transforms</span><span class="o">.</span><span class="n">Resize</span><span class="p">([</span><span class="mi">572</span><span class="p">,</span> <span class="mi">572</span><span class="p">]),</span>
+         <span class="n">transforms</span><span class="o">.</span><span class="n">ToTensor</span><span class="p">()])</span>
+    <span class="c1"># 调整大小为572×572，转为张量，增加维度B</span>
+    <span class="n">input_x_tensor</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">input_x</span><span class="p">)</span><span class="o">.</span><span class="n">unsqueeze</span><span class="p">(</span><span class="mi">0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>Image.open读入图片后，预处理，将图片大小插值调整为572×572，同时通过unsqueeze(0)增加张量的维度，增加后张量维度为（1，3，572，572）。通过<code class="docutils literal notranslate"> <span class="pre">model</span> <span class="pre">=</span> <span class="pre">UNet(in_channels=3,</span> <span class="pre">out_channels=1).to(device)</span></code>这一给定的模型参数定义程序，得知模型输入通道数为3，因此可将处理后的张量输入模型了。</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>	<span class="c1"># score.shape = (1, 1, w, h)</span>
+    <span class="c1"># 输出结果插值处理，匹配图片尺寸</span>
+    <span class="n">img_size</span> <span class="o">=</span> <span class="p">(</span><span class="n">img</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">img</span><span class="o">.</span><span class="n">size</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">interpolate</span><span class="p">(</span><span class="n">score</span><span class="p">,</span>
+                          <span class="n">size</span><span class="o">=</span><span class="n">img_size</span><span class="p">,</span>
+                          <span class="n">mode</span><span class="o">=</span><span class="s2">&quot;nearest&quot;</span><span class="p">)</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">score</span><span class="o">.</span><span class="n">squeeze</span><span class="p">()</span>  <span class="c1"># 移除尺度为1的维度, score.shape = (w, h)</span>
+    <span class="n">score</span> <span class="o">=</span> <span class="n">F</span><span class="o">.</span><span class="n">sigmoid</span><span class="p">(</span><span class="n">score</span><span class="p">)</span>  <span class="c1"># sigmoid函数处理</span>
+    <span class="n">threshold</span> <span class="o">=</span> <span class="mf">0.8</span>  <span class="c1"># 设定阈值，不能超过1，过小效果变差</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="p">(</span><span class="n">score</span> <span class="o">&gt;</span> <span class="n">threshold</span><span class="p">)</span>  <span class="c1"># 根据阈值转换</span>
+    <span class="n">mask</span> <span class="o">=</span> <span class="n">mask</span><span class="o">.</span><span class="n">cpu</span><span class="p">()</span><span class="o">.</span><span class="n">numpy</span><span class="p">()</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="nb">int</span><span class="p">)</span>  <span class="c1"># 张量迁移至cpu，转为整数数组</span>
+
+    <span class="n">plot_img_and_mask</span><span class="p">(</span><span class="n">img</span><span class="p">,</span> <span class="n">mask</span><span class="p">)</span>  <span class="c1"># 输出结果图片</span>
+</pre></div>
+</div>
+<p>使用interpolate通过插值处理变换张量的维度，变为输入图片的大小，再通过squeeze，移去多余的维度。经过合适的阈值判断处理后得到张量mask，它的类型是bool。绘制mask还需要转为整数数组，此时需要将张量转移到CPU后再转为整数数组。调整阈值可以得到不同的输出结果。</p>
+</section>
+</section>
+</section>
+<section id="id18">
+<h2><span class="section-number">4.5. </span>五、实验结果与分析<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h2>
+<section id="id19">
+<h3><span class="section-number">4.5.1. </span>5.1 LeNet-5<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h3>
+<p>在选择损失函数为交叉熵损失，优化器类型为自适应矩估计，学习率为0.001，batch_size为64，训练次数为10的情况下，得到结果如下：</p>
+<img src="image/HW4/train_loss.jpg" alt="train_loss" style="zoom: 50%;" /><p>可以看到随着训练次数的增加，loss值，即模型预测值与实际值之间的差异越来越小，逼近于0。说明模型在一步步优化。同时第二次训练后的结果最为明显，随着次数增加，训练对loss的减小效果越来越弱。</p>
+<img src="image/HW4/train_accuracy.jpg" alt="train_accuracy" style="zoom: 50%;" /><p>同时训练集的识别率与上图是对应的，随着训练次数增加，识别率显著提升，但提升效果越来越弱。</p>
+<img src="image/HW4/test_accuracy.jpg" alt="test_accuracy" style="zoom: 50%;" /><p>测试集的识别率曲线展现了相似的趋势，事实上即使是epoch=0，模型也能给出非常高的识别率，这主要原因在于其实在一个epoch中有都多个batch循环，已经对模型进行了数次训练，一个epoch是对所有数据集遍历后的结果，而不止是一次前向传播、反向传播、模型更新的结果。最终测试集的识别率达到98.9%。</p>
+</section>
+<section id="id20">
+<h3><span class="section-number">4.5.2. </span>5.2 U-Net补全与测试<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h3>
+<p>模型成功装载后，测试图片，选择阈值为0.8，得出结果如下：</p>
+<p><img alt="0" src="image/HW4/a.png" /></p>
+<p>可以看到模型成功分割出图片中的汽车，即判断出图片中的元素是否属于汽车，解出这个二分类问题。</p>
+<p>当选择的阈值为0.5左右或高于0.8小于1时，模型也能完成分割任务，但输出结果中会有一定边缘毛刺，当阈值过低，模型将不能完成任务，输出的掩码中将大部分像素判断为1。</p>
+</section>
+</section>
+<section id="id21">
+<h2><span class="section-number">4.6. </span>六、结论与心得体会<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h2>
+<section id="id22">
+<h3><span class="section-number">4.6.1. </span>结论<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h3>
+<p>该程序能够基本完成LeNet-5重构，训练，识别的任务，对测试集的识别率能够达到98%以上。</p>
+<p>同时补全后的程序能够基本完成U-Net单图片测试任务，输出正确的结果图片。</p>
+</section>
+<section id="id23">
+<h3><span class="section-number">4.6.2. </span>心得体会<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h3>
+<ol>
+<li><p>LeNet-5程序编写的过程中，代码逻辑比较简单，但是需要了解很多对各个函数的使用、参数确定的涵义等相关知识。有些参数的确定建立在模型、数据的特性上，有些参数则主要根据前人的经验判断。</p>
+<p>例如损失函数的选择，根据解决问题的性质是多分类问题，因此选择交叉熵损失。</p>
+<p>例如batch_size的选择，更好的方法是从小到大依次实验，选择合适的参数，因为它也跟硬件条件有关，在本实验中为了节省不必要的时间成本，选择了常用的64。</p>
+<p>另外优化器的选择意料之外的重要，当选择随机梯度优化（SGD）时，由于其下降速度慢，导致模型训练效果不明显。</p>
+</li>
+<li><p>当对LeNet-5的网络结构编写有一定了解后，U-net的结构也能够更好的理解和掌握。而且已经给出了大致代码框架的前提下，省去了很多时间，可以直接去思考如何编写核心的代码。理解结构、编写代码不难，难得是不清楚为何要有这样的结构，为何确定这样的维数输入输出。</p></li>
+<li><p>U-Net实验中一开始没有明白实例化的模型<code class="docutils literal notranslate">&#160;&#160;&#160; <span class="pre">model</span> <span class="pre">=</span> <span class="pre">UNet(in_channels=3,</span> <span class="pre">out_channels=1).to(device)</span></code>和文件中给出的model.pth有什么关系，后来理解为model.pth是U-Net网络模型训练后得到的模型参数，因此加载后可以直接测试图片。</p></li>
+<li><p>在无论是LeNet-5还是U-Net测试的过程中，都遇到过一个困惑，就是不清楚这个网络输出结果的具体意义是什么，只是单纯可以确定它的维数。如果已知训练过程，可以从损失函数与targets来推断，但是未知训练过程下，这个模型输出就觉得会有些抽象化。当然U-Net的文档说明给出了对输出结果处理的描述，因此可以较为顺利地得出mask。</p></li>
+<li><p>之前的数据类型建立在Numpy上，是向量，而PyTorch的数据类型是张量，它们有些相同点，也有更多的不同点，编写时需要格外注意变量的数据类型。</p></li>
+</ol>
+</section>
+</section>
+<section id="id24">
+<h2><span class="section-number">4.7. </span>七、参考文献<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h2>
+<p>[1],罗小罗同学,卷积神经网络（CNN）, [OL],知乎, 2023-5-7, [2023-12-30],<a class="reference external" href="https://zhuanlan.zhihu.com/p/626513509">卷积神经网络（CNN） - 知乎 (zhihu.com)</a></p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="HW3.html" class="btn btn-neutral float-left" title="3. 写代码实现Eigenface人脸识别的训练、识别、重构过程" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="HW5.html" class="btn btn-neutral float-right" title="5. 精灵宝可梦类型预测任务" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Zhanfeng Xu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

@@ -1,0 +1,465 @@
+# 写代码实现Eigenface人脸识别的训练、识别、重构过程
+
+姓名：许展风 			学号：3210100658
+
+电子邮箱：zhanfeng_xu@outlook.com  		 联系电话：15224131655
+
+老师：潘纲老师			报告日期：2023年12月17日
+
+## 一、功能简述及运行说明
+
+### 1.1 功能简述
+
+利用公开的人脸数据集构建一个自己人脸库，通过PCA原理实现三个程序过程，分别对应训练、识别、重构。
+
+### 1.2 运行说明
+
+程序运行后，直接读取默认位置的数据集，包括课程提供的AT&T人脸数据集以及对应两眼位置信息，和个人人脸数据集。将其分类后，进行全部训练集模型训练，将训练模型保存在默认文件夹(total_model)下，根据模型绘制前10个特征脸，与前10个特征脸的合成，以及平均脸；输入不曾训练的一张个人图片进行识别，输出最相似的训练集中的图片；分别输入不曾训练的个人图片以及训练过的个人图片进行重构，保存不同PCN的重构结果。
+
+对一半数据集作为训练集训练，另一半作为测试集进行识别，有两种测试集，根据眼睛位置变换后的测试集、未变换的测试集，分别对两种测试集进行测试，并绘制识别率曲线。
+
+
+## 二、开发与运行环境
+
+编程语言：python 3.10.6
+
+编程环境：VScode+Jupyter Notebook
+
+运行环境：Windows
+
+## 三、算法原理
+
+### 3.1 算法流程图
+
+```mermaid
+graph LR
+    A[AT&T人脸数据集]
+    B[个人人脸数据]
+    A --> C[模型训练]
+    B --> C
+    C --> D[特征脸与平均脸]
+    D --> E[识别与重构]
+    F[测试集] --> E
+```
+
+### 3.2 具体原理介绍
+
+#### 1.  PCA原理
+
+主成分分析（Principal Component Analysis，PCA）是一种常用的降维技术，用于数据的特征提取和数据压缩。它是一种线性变换技术，旨在找到数据中最重要的方向，从而减少数据的维度，同时保留大部分数据的信息。
+
+PCA的理论证明可以通过建模为最大化方差的优化问题，进一步转化为最大化瑞立商问题来解决，这里不予详细证明。
+
+#### 2.  模型训练过程
+
+- 中心化数据：首先，对数据进行标准化处理，即将每个特征的均值移动到零均值。这意味着对每个特征减去该特征的均值，以便使数据的中心位于原点。
+
+  应用在人脸识别场景，即对数据减去平均脸。
+
+- 计算协方差矩阵：PCA 的核心是通过计算特征之间的协方差矩阵来找到数据中的主要方向。协方差描述了两个变量之间的相关性。PCA 寻找使得协方差最大（方差最大）的方向，即数据变化最大的方向。
+
+$$
+C = \frac{1}{n-1}(\mathbf{X}-\bar{\mathbf{X}})^{\mathrm{T}}(\mathbf{X}-\bar{\mathbf{X}})
+$$
+
+- 特征值分解：对协方差矩阵进行特征值分解。特征值和对应的特征向量描述了协方差矩阵的主要特性。特征向量构成了数据的主成分方向，而特征值表示每个主成分方向上的数据变化程度。
+
+$$
+\mathbf{A} = \mathbf{V}\mathbf{\Lambda} \mathbf{V}^{-1}
+$$
+
+其中$ \mathbf{V}$是由A的特征向量组成的酉矩阵， $ \mathbf{\Lambda}$是一个对角矩阵，对焦线上的元素是$\mathbf{A}$的特征值。
+
+- 选择主成分：根据特征值的大小排序特征向量，选择前 k 个特征向量作为主成分（k 是降维后的维度）。这些主成分描述了数据中最大的方差方向。
+
+#### 3. 识别过程
+
+- 投影到新空间：使用选定的前 k 个主成分构成的矩阵将数据投影到新的低维空间，从而实现降维。假设$\mathbf{x}$是像素空间上的坐标，$\mathbf{V}$是特征矩阵：
+
+$$
+\mathbf{y}_f = \mathbf{V}^{\mathrm{T}}\mathbf{x}
+$$
+
+由此得到特征空间上的坐标。
+
+- 欧式距离比较：比较两图片特征坐标下的欧式距离，可以衡量两张图片的相似度。欧氏距离（Euclidean distance）是用于计算两点之间的直线距离的一种常见方式，可以在多维空间中使用。向量$\mathbf{x}$与$\mathbf{y}$之间的距离如下公式：
+
+$$
+D = \| \mathbf{x-y} \|_2
+$$
+
+#### 4. 重构过程
+
+- 投影到新空间：同理识别过程
+- 重投影到像素空间：因为$\mathbf{V}$是酉矩阵，$\mathbf{V}\mathbf{V}^{\mathrm{H}}=\mathbf{I}$，即特征矩阵的转置等于它的逆，由此得到逆变换公式，可以将特征空间的坐标投影到像素空间。
+
+$$
+\hat{\mathbf{x}} =  \mathbf{V}\mathbf{y}_f
+$$
+
+
+
+## 四、具体实现
+
+### 4.1 图片数据提取
+
+```python
+# 读取一个文件夹下的所有图片，输入参数是文件名，返回文件地址列表
+def read_directory(directory_name):
+    faces_addr = []
+    for filename in os.listdir(directory_name):
+        faces_addr.append(directory_name + "/" + filename)
+    return faces_addr
+
+
+# 读取所有人脸文件夹,保存图像地址在faces列表中
+faces = []
+eyes = []
+for i in range(1, 41):
+    faces_addr = read_directory(
+        'image/HW3/att-face/s' + str(i))
+    eyes_addr = read_directory(
+        'image/HW3/ATT-eye-location/s' +
+        str(i))
+    for addr in faces_addr:
+        faces.append(addr)
+    for addr in eyes_addr:
+        eyes.append(addr)
+
+eyes_dests = []
+
+for index, eye_dest in enumerate(eyes):
+    f = open(eye_dest, 'r')
+    eyes_dests.append(json.loads(f.read()))
+    f.close()
+
+# 读取图片数据,生成列表标签
+total_images = []  # 总人脸图片集
+train_images = []  # 一半图片集用于训练
+test_images = []  # 一半图片集用于测试
+nochange_images = []  # 未变形处理的一半测试集
+labels = []
+for index, face in enumerate(faces):
+
+    tempIm = Image.open(face)
+    tranIm = CropFace(tempIm,
+                      eyes_dests[index]['centre_of_left_eye'],
+                      eyes_dests[index]['centre_of_right_eye'],
+                      offset_pct=(0.3, 0.43),
+                      dest_sz=(92, 112))  # 根据眼睛位置变换图片
+
+    initIm = np.array(tranIm)
+    histIm = cv2.equalizeHist(initIm)  # 图片均衡化
+
+    total_images.append(histIm)
+    labels.append(int(index / 5 + 1))  # 标记一半图片的训练集和测试集
+    # 分类为训练和测试集
+    if (index % 10 < 5):
+        train_images.append(histIm)
+    else:
+        test_images.append(histIm)
+        nochange_images.append(cv2.equalizeHist(np.array(tempIm)))
+
+
+```
+
+参考了使用os模块读取ORL数据集的程序结构[1]，先读取文件列表与文件名，再依次遍历文件名读取图片。由于后续需要进一步对图片作变换等预处理，因此将两步骤结合，在读取时直接进行预处理与分类，节省遍历次数。
+
+
+
+### 4.2 图片预处理
+
+```python
+tempIm = Image.open(face)
+tranIm = CropFace(tempIm,
+                  eyes_dests[index]['centre_of_left_eye'],
+                  eyes_dests[index]['centre_of_right_eye'],
+                  offset_pct=(0.3, 0.43),
+                  dest_sz=(92, 112))  # 根据眼睛位置变换图片
+
+initIm = np.array(tranIm)
+histIm = cv2.equalizeHist(initIm)  # 图片均衡化
+```
+
+CropFace是参考一篇OpenCV官方教程中的提供的函数[2]，可以根据眼睛位置变换图片。
+
+图片均衡化（Image Histogram Equalization）是一种图像增强的技术，用于改善图像的对比度和亮度分布，使图像更具可视化效果。使用 OpenCV 的 `cv2.equalizeHist()` 函数对图像进行直方图均衡化。
+
+
+
+### 4.3 训练过程
+
+- 求协方差矩阵
+
+```python
+  	# 图像矩阵向量化
+    flatten_faces = []
+    for face in images:
+        flatten_faces.append(face.flatten())
+
+    # 对应维度上取平均得到平均脸
+    average_face = np.sum(flatten_faces, axis=0) / K
+
+    # 保存平均脸图像
+    show_average = average_face.reshape(SIZE)
+    # cv2.imwrite('show_average.jpg',show_average)
+
+    # 求协方差矩阵
+    diff_faces = flatten_faces - average_face
+    C_faces = np.dot(diff_faces.T, diff_faces) / K
+```
+
+利用python的广播特性可以对向量进行较为方便的处理，首先将$M$×$N$大小的图片矩阵展平为1×$MN$的向量，并将K个样本向量组合在一个list中。得到$K$×$MN$的矩阵，通过np.sum函数可以在指定维度上取平均，得到平均脸。利用广播特性` diff_faces = flatten_faces - average_face`将$K$×$MN$的矩阵减去1×$MN$的矩阵，等价于前者每一行都减去1×$MN$的矩阵，实现中心化数据，进一步利用点乘得到协方差矩阵。
+
+
+
+- 主成分提取
+
+```python
+	# EVD
+    e_vals, e_vecs = np.linalg.eigh(C_faces)
+
+    # 实数化
+    e_vals = np.real(e_vals)
+    e_vecs = np.real(e_vecs)
+
+    # np.linalg.eigh求得的是升序排列的结果，现将其倒序
+    e_vals_re = e_vals[::-1]
+    e_vecs_re = (e_vecs.T)[::-1].T
+
+    # 筛选主成分
+    vecs_num = 0
+    main_vals_Sum = 0
+    vals_Sum = np.sum(e_vals_re)
+    i = 0
+    while (main_vals_Sum < vals_Sum * energyPercent):
+        main_vals_Sum += e_vals_re[i]
+        i += 1
+    vecs_num = i
+    main_vecs = []
+    for i in range(0, vecs_num):
+        main_vecs.append(e_vecs_re[:, i])
+    main_vecs = np.array(main_vecs).T  # 得到按列排列的筛选后特征向量
+```
+
+ np.linalg.eigh是EVD函数，得到的特征值、特征向量是按特征值升序排列的，且该函数的输入矩阵必须是对称矩阵，由于输入是协方差矩阵，根据公式可知满足要求。
+
+实对称矩阵的特征值一定为实数，特征向量一定为实数向量。因此直接对结果取实部，并对序列取倒序。` e_vecs_re = (e_vecs.T)[::-1].T`在于特征向量是按列排的，因此需要转置后倒序。
+
+倒序后即可通过循环控制筛选主成分。
+
+
+
+- 保存模型
+
+```python
+    # 保存模型
+    os.makedirs(modelfile, exist_ok=True)
+    np.save(modelfile + '/main_vecs', main_vecs)
+    np.save(modelfile + '/avg_face', show_average)
+```
+
+os.makedirs创建文件夹，np.save将数据保存为.npy文件。
+
+
+
+### 4.4 识别过程
+
+- 特征脸空间变换
+
+```python
+    # 对输入被识别图片进行特征脸空间变换
+    x_face = (test_image - avg_face).flatten()  # 与平均脸求差
+    y_vecs = np.dot(tran_vecs.T, x_face)  # 变换
+
+    # 对训练集图片进行特征脸空间变换
+    # 二维图片展平
+    flatten_faces = []
+    for face in images:
+        flatten_faces.append(face.flatten())
+    flatten_faces = np.array(flatten_faces)
+
+    # 变换
+    diff_faces = flatten_faces - avg_face.flatten()  # 与平均脸求差
+    train_vecs = np.dot(tran_vecs.T, diff_faces.T)  # 变换
+
+```
+
+同样利用广播特性进行多张图片的特征脸空间变换，先得到展平的一维图片的矩阵，其维度是$K$×$MN$，而特征矩阵的转置维度为$N_{\mathrm{PC}}$×$MN$，$N_{\mathrm{PC}}$是主成分特征量数量。因此对图片矩阵转置后代入公式，得到$N_{\mathrm{PC}}$×$K$的矩阵，对应$K$个图片向量变换后得到的按列排列的特征空间坐标。
+
+
+
+- 求欧氏距离
+
+```python
+    # 求最小的欧式距离的序号
+    D = train_vecs - y_vecs.reshape((PCN, 1))  # 利用python广播性质求差
+    D_2 = np.diag(np.dot(D.T, D))  # 对角线值即为欧式距离的平方
+    index_similar = np.argmin(D_2)
+
+```
+
+再次利用广播性质求差，得到$N_{\mathrm{PC}}$×$K$大小的矩阵，是$K$个按列排列的列向量。`D.T, D`矩阵相乘，对角线上即是向量与本身的内积。使用np.argmin得到向量中最小值的索引，即第几个图片是最相似的。进一步可求得标签。
+
+
+
+### 4.5 重构过程
+
+```python
+	# 根据不同PCN求重构图片
+    PCNs = [10, 25, 50, 100, main_num]
+    for PCN in PCNs:
+        tran_vecs = main_vecs[:, 0:PCN]  # 取对应数量
+        y_vecs = np.dot(tran_vecs.T, x_face)  # 变换
+        re_face = np.dot(tran_vecs, y_vecs)  # 重构
+
+        # 绘制
+        re_face = re_face.reshape(SIZE)
+        re_face = cv2.normalize(re_face, None, 255, 0, cv2.NORM_MINMAX,
+                                cv2.CV_8UC1)  # 映射到255像素
+        re_face = np.uint8(re_face)
+        cv2.imwrite(imagename + str(PCN) + '.jpg', re_face)
+```
+
+重构过程是坐标变换的逆变换，最关键即一行代码。按照要求，使用不同数量的特征向量作为特征矩阵做变换。
+
+
+
+### 4.6 模型数据绘制
+
+```python
+	# 绘制前10个特征脸
+    main_image0 = main_vecs[:, 0].reshape(SIZE)
+    # 将像素值正则化至255像素范围
+    PCs = cv2.normalize(main_image0, None, 255, 0, cv2.NORM_MINMAX,
+                        cv2.CV_8UC1)
+    # 组合其他图片
+    for i in range(1, 11):
+        main_image = main_vecs[:, i].reshape(SIZE)
+        main_image = cv2.normalize(main_image, None, 255, 0, cv2.NORM_MINMAX,
+                                   cv2.CV_8UC1)
+        PCs = np.hstack([PCs, main_image])
+    PCs = np.uint8(PCs)
+    cv2.imwrite(imagename + "_PCs_10.jpg", PCs)
+
+    # 绘制展示特征脸的合成
+    CC = np.sum(main_vecs[:, 0:10], axis=1)  # 按列合成
+    CC = CC.reshape(SIZE)
+    CC = cv2.normalize(CC, None, 255, 0, cv2.NORM_MINMAX, cv2.CV_8UC1)
+    CC = np.uint8(CC)
+    cv2.imwrite(imagename + "_PCs_sum.jpg", CC)
+```
+
+由于特征向量是单位向量，需要将值拉伸至255像素范围才便于显示，因此使用openCV的函数实现。基本流程是维度重建为2维，拉伸至255像素值，取整，保存。
+
+
+
+## 五、实验结果与分析
+
+### 5.1 模型数据绘制
+
+- 平均脸
+
+<center class="half">
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\total_average.jpg"  width=100/>
+</center>
+
+训练得到的平均脸如上，可以看到图像周边模糊，而中心较为清晰，特别是眼睛附近更加清晰。且图像整体对称且匀称。
+
+- 前十特征脸
+
+![total_PCs_10](D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\total_PCs_10.jpg)
+
+前十张特征脸相比于平均脸则相对有了些许细节，例如明暗不同，主要特征不同，有的有明显的眼镜，有的则无，而且每张图片几乎完全不相似，体现了特征向量的正交性。
+
+- 前十个特征脸的叠加
+
+![total_PCs_sum](D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\total_PCs_sum.jpg)
+
+前十个特征脸的直接叠加得到的本质是特征坐标为（1，1，1，1，1，1，1，1，1，1）重构得到的人脸。改变坐标或者增加、减少维度，可以进一步改变输出的人脸结果。
+
+
+
+### 5.2 识别结果
+
+- 对模型输入一张不曾训练的个人图片识别，输出最相似的训练集图片：
+
+  <center class="half">
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\self_test.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\similar_image.jpg" width=100/>
+  </center>
+
+左图为输入图片，右图输出最相似的训练集图片。可以看到人物是正确的，角度是类似的。识别功能实现。
+
+
+
+- 对模型输入一张不曾训练的个人图片识别，输出重构图片：
+
+  <center class="half">
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image10.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image25.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image50.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image100.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image181.jpg" width=100/>
+  </center>
+
+PCN的数量依次是10、25、50、100、181个，输入图片即上文彩色图片，可以看到PCN数量依次增大，图片本身与原图像越来越相似。但是在细节的重构方面非常不足，严重模糊，这与本身图片中干扰噪声较多也有关。
+
+
+
+- 对模型输入训练过的个人图片识别，输出重构图片：
+
+  <center class="half">
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re210.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re225.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re250.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re2100.jpg" width=100/>
+  <img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re2181.jpg" width=100/>
+  </center>
+
+可以看到本次重构的结果，细节方面更加丰富。且从PCN逐渐增大，一开始，可以看到本身个人图片眼睛的位置与重构图片白色眼睛有错位，后来眼睛更加明显。反思现象，可能是个人数据的图片是没有经过程序变换的，因为眼睛位置数据缺失，因此会导致重构时有错位的发生，是训练集内部图像数据不够统一。
+
+
+
+### 5.2 识别率测试结果
+
+- 对预处理后的测试集进行测试
+
+![PC-Rank1 rate curve](D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\PC-Rank1 rate curve.jpg)
+
+可以看到整体识别率较高，最低75%, 最高86%，分别在PCN=10，PCN=50、75时达到。整体是符合理论预计的，即PCN数量越多，识别率越高，但在数量达到100以上时，识别率反而有一定的降低，可能是过拟合造成的性能变差。
+
+- 对没有预处理的测试集进行测试：
+
+
+![PC-Rank1 rate curve Ⅱ](D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\PC-Rank1 rate curve Ⅱ.jpg)
+
+没有预处理的测试集，本质是没有进行根据眼睛位置变换的处理，因此对此测试集进行测试，得到了更加明显的结果，可以看到PCN=10时，识别率非常低，仅有22%； 而PCN=50时识别率最高，也仅有29%；而且当PCN进一步增加，识别率更加明显的下降，最终下降至24%，更明显地表现出了过拟合的问题。
+
+
+
+
+## 六、结论与心得体会
+
+### 结论
+
+该程序能够基本完成训练、识别、重构的任务。
+
+可以进一步改善个人训练图片，调整其图片缩放、或者得到眼睛位置数据后进一步变形图片。
+
+
+
+### 心得体会
+
+1.  使用python语言在处理向量时可以更便捷的进行数据处理，但处理过程中要注意维度问题，才能捋清变换过程。
+2.  在其他课程上学习过SVD方法，可以不必求协方差矩阵，可以直接求主特征，达到减少计算量的目的，是一个可以进一步探索的方法。
+
+
+
+## 七、参考文献
+
+[1],[弈-剑](https://blog.csdn.net/weixin_45634365),Eigenface(PCA)人脸识别实验, [OL],OpenCV, 2021-02-01, [2023-12-17], https://docs.opencv.org/2.4/modules/contrib/doc/facerec/facerec_tutorial.html#id27
+
+[2],Philipp Wagner, [Face Recognition with OpenCV](https://docs.opencv.org/2.4/modules/contrib/doc/facerec/facerec_tutorial.html#id27), [OL],CSDN,  2012, [2023-12-17],https://blog.csdn.net/weixin_45634365/article/details/113529174
+
+[3],opencv实现Eigenface人脸识别,  [OL]， GitHub，2021-01-29，[2023-12-17], https://x-wflo.github.io/2021/01/29/cv_report4/#

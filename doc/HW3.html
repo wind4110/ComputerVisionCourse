@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>3. 写代码实现Eigenface人脸识别的训练、识别、重构过程 &mdash; ComputerVersionCourse 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="4. 编程实现 LeNet 的训练和 U-Net 的补全及测试" href="HW4.html" />
+    <link rel="prev" title="2. 编程实现多张图片的自动拼接" href="HW2.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ComputerVersionCourse
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="HW1.html">1. Canny边缘检测算法实现</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW2.html">2. 编程实现多张图片的自动拼接</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">3. 写代码实现Eigenface人脸识别的训练、识别、重构过程</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id1">3.1. 一、功能简述及运行说明</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id2">3.1.1. 1.1 功能简述</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id3">3.1.2. 1.2 运行说明</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id4">3.2. 二、开发与运行环境</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">3.3. 三、算法原理</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id6">3.3.1. 3.1 算法流程图</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id7">3.3.2. 3.2 具体原理介绍</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#pca">3.3.2.1. 1.  PCA原理</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id8">3.3.2.2. 2.  模型训练过程</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id9">3.3.2.3. 3. 识别过程</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id10">3.3.2.4. 4. 重构过程</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id11">3.4. 四、具体实现</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id12">3.4.1. 4.1 图片数据提取</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id13">3.4.2. 4.2 图片预处理</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id14">3.4.3. 4.3 训练过程</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">3.4.4. 4.4 识别过程</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">3.4.5. 4.5 重构过程</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17">3.4.6. 4.6 模型数据绘制</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id18">3.5. 五、实验结果与分析</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id19">3.5.1. 5.1 模型数据绘制</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id20">3.5.2. 5.2 识别结果</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id21">3.5.3. 5.2 识别率测试结果</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id22">3.6. 六、结论与心得体会</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id23">3.6.1. 结论</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id24">3.6.2. 心得体会</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id25">3.7. 七、参考文献</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="HW4.html">4. 编程实现 LeNet 的训练和 U-Net 的补全及测试</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW5.html">5. 精灵宝可梦类型预测任务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="review.html">6. 计算机视觉复习</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ComputerVersionCourse</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">3. </span>写代码实现Eigenface人脸识别的训练、识别、重构过程</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/HW3.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="eigenface">
+<h1><span class="section-number">3. </span>写代码实现Eigenface人脸识别的训练、识别、重构过程<a class="headerlink" href="#eigenface" title="Permalink to this heading"></a></h1>
+<p>姓名：许展风 			学号：3210100658</p>
+<p>电子邮箱：zhanfeng_xu&#64;outlook.com  		 联系电话：15224131655</p>
+<p>老师：潘纲老师			报告日期：2023年12月17日</p>
+<section id="id1">
+<h2><span class="section-number">3.1. </span>一、功能简述及运行说明<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h2>
+<section id="id2">
+<h3><span class="section-number">3.1.1. </span>1.1 功能简述<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h3>
+<p>利用公开的人脸数据集构建一个自己人脸库，通过PCA原理实现三个程序过程，分别对应训练、识别、重构。</p>
+</section>
+<section id="id3">
+<h3><span class="section-number">3.1.2. </span>1.2 运行说明<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+<p>程序运行后，直接读取默认位置的数据集，包括课程提供的AT&amp;T人脸数据集以及对应两眼位置信息，和个人人脸数据集。将其分类后，进行全部训练集模型训练，将训练模型保存在默认文件夹(total_model)下，根据模型绘制前10个特征脸，与前10个特征脸的合成，以及平均脸；输入不曾训练的一张个人图片进行识别，输出最相似的训练集中的图片；分别输入不曾训练的个人图片以及训练过的个人图片进行重构，保存不同PCN的重构结果。</p>
+<p>对一半数据集作为训练集训练，另一半作为测试集进行识别，有两种测试集，根据眼睛位置变换后的测试集、未变换的测试集，分别对两种测试集进行测试，并绘制识别率曲线。</p>
+</section>
+</section>
+<section id="id4">
+<h2><span class="section-number">3.2. </span>二、开发与运行环境<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h2>
+<p>编程语言：python 3.10.6</p>
+<p>编程环境：VScode+Jupyter Notebook</p>
+<p>运行环境：Windows</p>
+</section>
+<section id="id5">
+<h2><span class="section-number">3.3. </span>三、算法原理<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h2>
+<section id="id6">
+<h3><span class="section-number">3.3.1. </span>3.1 算法流程图<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR
+    A[AT&amp;T人脸数据集]
+    B[个人人脸数据]
+    A --&gt; C[模型训练]
+    B --&gt; C
+    C --&gt; D[特征脸与平均脸]
+    D --&gt; E[识别与重构]
+    F[测试集] --&gt; E
+</pre></div>
+</div>
+</section>
+<section id="id7">
+<h3><span class="section-number">3.3.2. </span>3.2 具体原理介绍<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h3>
+<section id="pca">
+<h4><span class="section-number">3.3.2.1. </span>1.  PCA原理<a class="headerlink" href="#pca" title="Permalink to this heading"></a></h4>
+<p>主成分分析（Principal Component Analysis，PCA）是一种常用的降维技术，用于数据的特征提取和数据压缩。它是一种线性变换技术，旨在找到数据中最重要的方向，从而减少数据的维度，同时保留大部分数据的信息。</p>
+<p>PCA的理论证明可以通过建模为最大化方差的优化问题，进一步转化为最大化瑞立商问题来解决，这里不予详细证明。</p>
+</section>
+<section id="id8">
+<h4><span class="section-number">3.3.2.2. </span>2.  模型训练过程<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h4>
+<ul>
+<li><p>中心化数据：首先，对数据进行标准化处理，即将每个特征的均值移动到零均值。这意味着对每个特征减去该特征的均值，以便使数据的中心位于原点。</p>
+<p>应用在人脸识别场景，即对数据减去平均脸。</p>
+</li>
+<li><p>计算协方差矩阵：PCA 的核心是通过计算特征之间的协方差矩阵来找到数据中的主要方向。协方差描述了两个变量之间的相关性。PCA 寻找使得协方差最大（方差最大）的方向，即数据变化最大的方向。</p></li>
+</ul>
+<p>$$
+C = \frac{1}{n-1}(\mathbf{X}-\bar{\mathbf{X}})^{\mathrm{T}}(\mathbf{X}-\bar{\mathbf{X}})
+$$</p>
+<ul class="simple">
+<li><p>特征值分解：对协方差矩阵进行特征值分解。特征值和对应的特征向量描述了协方差矩阵的主要特性。特征向量构成了数据的主成分方向，而特征值表示每个主成分方向上的数据变化程度。</p></li>
+</ul>
+<p>$$
+\mathbf{A} = \mathbf{V}\mathbf{\Lambda} \mathbf{V}^{-1}
+$$</p>
+<p>其中$ \mathbf{V}$是由A的特征向量组成的酉矩阵， $ \mathbf{\Lambda}$是一个对角矩阵，对焦线上的元素是$\mathbf{A}$的特征值。</p>
+<ul class="simple">
+<li><p>选择主成分：根据特征值的大小排序特征向量，选择前 k 个特征向量作为主成分（k 是降维后的维度）。这些主成分描述了数据中最大的方差方向。</p></li>
+</ul>
+</section>
+<section id="id9">
+<h4><span class="section-number">3.3.2.3. </span>3. 识别过程<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h4>
+<ul class="simple">
+<li><p>投影到新空间：使用选定的前 k 个主成分构成的矩阵将数据投影到新的低维空间，从而实现降维。假设$\mathbf{x}$是像素空间上的坐标，$\mathbf{V}$是特征矩阵：</p></li>
+</ul>
+<p>$$
+\mathbf{y}_f = \mathbf{V}^{\mathrm{T}}\mathbf{x}
+$$</p>
+<p>由此得到特征空间上的坐标。</p>
+<ul class="simple">
+<li><p>欧式距离比较：比较两图片特征坐标下的欧式距离，可以衡量两张图片的相似度。欧氏距离（Euclidean distance）是用于计算两点之间的直线距离的一种常见方式，可以在多维空间中使用。向量$\mathbf{x}$与$\mathbf{y}$之间的距离如下公式：</p></li>
+</ul>
+<p>$$
+D = | \mathbf{x-y} |_2
+$$</p>
+</section>
+<section id="id10">
+<h4><span class="section-number">3.3.2.4. </span>4. 重构过程<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h4>
+<ul class="simple">
+<li><p>投影到新空间：同理识别过程</p></li>
+<li><p>重投影到像素空间：因为$\mathbf{V}$是酉矩阵，$\mathbf{V}\mathbf{V}^{\mathrm{H}}=\mathbf{I}$，即特征矩阵的转置等于它的逆，由此得到逆变换公式，可以将特征空间的坐标投影到像素空间。</p></li>
+</ul>
+<p>$$
+\hat{\mathbf{x}} =  \mathbf{V}\mathbf{y}_f
+$$</p>
+</section>
+</section>
+</section>
+<section id="id11">
+<h2><span class="section-number">3.4. </span>四、具体实现<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h2>
+<section id="id12">
+<h3><span class="section-number">3.4.1. </span>4.1 图片数据提取<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="c1"># 读取一个文件夹下的所有图片，输入参数是文件名，返回文件地址列表</span>
+<span class="k">def</span> <span class="nf">read_directory</span><span class="p">(</span><span class="n">directory_name</span><span class="p">):</span>
+    <span class="n">faces_addr</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">filename</span> <span class="ow">in</span> <span class="n">os</span><span class="o">.</span><span class="n">listdir</span><span class="p">(</span><span class="n">directory_name</span><span class="p">):</span>
+        <span class="n">faces_addr</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">directory_name</span> <span class="o">+</span> <span class="s2">&quot;/&quot;</span> <span class="o">+</span> <span class="n">filename</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">faces_addr</span>
+
+
+<span class="c1"># 读取所有人脸文件夹,保存图像地址在faces列表中</span>
+<span class="n">faces</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="n">eyes</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">41</span><span class="p">):</span>
+    <span class="n">faces_addr</span> <span class="o">=</span> <span class="n">read_directory</span><span class="p">(</span>
+        <span class="s1">&#39;image/HW3/att-face/s&#39;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="n">eyes_addr</span> <span class="o">=</span> <span class="n">read_directory</span><span class="p">(</span>
+        <span class="s1">&#39;image/HW3/ATT-eye-location/s&#39;</span> <span class="o">+</span>
+        <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">))</span>
+    <span class="k">for</span> <span class="n">addr</span> <span class="ow">in</span> <span class="n">faces_addr</span><span class="p">:</span>
+        <span class="n">faces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">addr</span> <span class="ow">in</span> <span class="n">eyes_addr</span><span class="p">:</span>
+        <span class="n">eyes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">addr</span><span class="p">)</span>
+
+<span class="n">eyes_dests</span> <span class="o">=</span> <span class="p">[]</span>
+
+<span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">eye_dest</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">eyes</span><span class="p">):</span>
+    <span class="n">f</span> <span class="o">=</span> <span class="nb">open</span><span class="p">(</span><span class="n">eye_dest</span><span class="p">,</span> <span class="s1">&#39;r&#39;</span><span class="p">)</span>
+    <span class="n">eyes_dests</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">f</span><span class="o">.</span><span class="n">read</span><span class="p">()))</span>
+    <span class="n">f</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<span class="c1"># 读取图片数据,生成列表标签</span>
+<span class="n">total_images</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 总人脸图片集</span>
+<span class="n">train_images</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 一半图片集用于训练</span>
+<span class="n">test_images</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 一半图片集用于测试</span>
+<span class="n">nochange_images</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 未变形处理的一半测试集</span>
+<span class="n">labels</span> <span class="o">=</span> <span class="p">[]</span>
+<span class="k">for</span> <span class="n">index</span><span class="p">,</span> <span class="n">face</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">faces</span><span class="p">):</span>
+
+    <span class="n">tempIm</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">face</span><span class="p">)</span>
+    <span class="n">tranIm</span> <span class="o">=</span> <span class="n">CropFace</span><span class="p">(</span><span class="n">tempIm</span><span class="p">,</span>
+                      <span class="n">eyes_dests</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="s1">&#39;centre_of_left_eye&#39;</span><span class="p">],</span>
+                      <span class="n">eyes_dests</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="s1">&#39;centre_of_right_eye&#39;</span><span class="p">],</span>
+                      <span class="n">offset_pct</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.43</span><span class="p">),</span>
+                      <span class="n">dest_sz</span><span class="o">=</span><span class="p">(</span><span class="mi">92</span><span class="p">,</span> <span class="mi">112</span><span class="p">))</span>  <span class="c1"># 根据眼睛位置变换图片</span>
+
+    <span class="n">initIm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tranIm</span><span class="p">)</span>
+    <span class="n">histIm</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">equalizeHist</span><span class="p">(</span><span class="n">initIm</span><span class="p">)</span>  <span class="c1"># 图片均衡化</span>
+
+    <span class="n">total_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">histIm</span><span class="p">)</span>
+    <span class="n">labels</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="nb">int</span><span class="p">(</span><span class="n">index</span> <span class="o">/</span> <span class="mi">5</span> <span class="o">+</span> <span class="mi">1</span><span class="p">))</span>  <span class="c1"># 标记一半图片的训练集和测试集</span>
+    <span class="c1"># 分类为训练和测试集</span>
+    <span class="k">if</span> <span class="p">(</span><span class="n">index</span> <span class="o">%</span> <span class="mi">10</span> <span class="o">&lt;</span> <span class="mi">5</span><span class="p">):</span>
+        <span class="n">train_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">histIm</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">test_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">histIm</span><span class="p">)</span>
+        <span class="n">nochange_images</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">equalizeHist</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tempIm</span><span class="p">)))</span>
+
+</pre></div>
+</div>
+<p>参考了使用os模块读取ORL数据集的程序结构[1]，先读取文件列表与文件名，再依次遍历文件名读取图片。由于后续需要进一步对图片作变换等预处理，因此将两步骤结合，在读取时直接进行预处理与分类，节省遍历次数。</p>
+</section>
+<section id="id13">
+<h3><span class="section-number">3.4.2. </span>4.2 图片预处理<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">tempIm</span> <span class="o">=</span> <span class="n">Image</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">face</span><span class="p">)</span>
+<span class="n">tranIm</span> <span class="o">=</span> <span class="n">CropFace</span><span class="p">(</span><span class="n">tempIm</span><span class="p">,</span>
+                  <span class="n">eyes_dests</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="s1">&#39;centre_of_left_eye&#39;</span><span class="p">],</span>
+                  <span class="n">eyes_dests</span><span class="p">[</span><span class="n">index</span><span class="p">][</span><span class="s1">&#39;centre_of_right_eye&#39;</span><span class="p">],</span>
+                  <span class="n">offset_pct</span><span class="o">=</span><span class="p">(</span><span class="mf">0.3</span><span class="p">,</span> <span class="mf">0.43</span><span class="p">),</span>
+                  <span class="n">dest_sz</span><span class="o">=</span><span class="p">(</span><span class="mi">92</span><span class="p">,</span> <span class="mi">112</span><span class="p">))</span>  <span class="c1"># 根据眼睛位置变换图片</span>
+
+<span class="n">initIm</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tranIm</span><span class="p">)</span>
+<span class="n">histIm</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">equalizeHist</span><span class="p">(</span><span class="n">initIm</span><span class="p">)</span>  <span class="c1"># 图片均衡化</span>
+</pre></div>
+</div>
+<p>CropFace是参考一篇OpenCV官方教程中的提供的函数[2]，可以根据眼睛位置变换图片。</p>
+<p>图片均衡化（Image Histogram Equalization）是一种图像增强的技术，用于改善图像的对比度和亮度分布，使图像更具可视化效果。使用 OpenCV 的 <code class="docutils literal notranslate"><span class="pre">cv2.equalizeHist()</span></code> 函数对图像进行直方图均衡化。</p>
+</section>
+<section id="id14">
+<h3><span class="section-number">3.4.3. </span>4.3 训练过程<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>求协方差矩阵</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>  	<span class="c1"># 图像矩阵向量化</span>
+    <span class="n">flatten_faces</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">face</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
+        <span class="n">flatten_faces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">face</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+
+    <span class="c1"># 对应维度上取平均得到平均脸</span>
+    <span class="n">average_face</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">flatten_faces</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span><span class="p">)</span> <span class="o">/</span> <span class="n">K</span>
+
+    <span class="c1"># 保存平均脸图像</span>
+    <span class="n">show_average</span> <span class="o">=</span> <span class="n">average_face</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">SIZE</span><span class="p">)</span>
+    <span class="c1"># cv2.imwrite(&#39;show_average.jpg&#39;,show_average)</span>
+
+    <span class="c1"># 求协方差矩阵</span>
+    <span class="n">diff_faces</span> <span class="o">=</span> <span class="n">flatten_faces</span> <span class="o">-</span> <span class="n">average_face</span>
+    <span class="n">C_faces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">diff_faces</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">diff_faces</span><span class="p">)</span> <span class="o">/</span> <span class="n">K</span>
+</pre></div>
+</div>
+<p>利用python的广播特性可以对向量进行较为方便的处理，首先将$M$×$N$大小的图片矩阵展平为1×$MN$的向量，并将K个样本向量组合在一个list中。得到$K$×$MN$的矩阵，通过np.sum函数可以在指定维度上取平均，得到平均脸。利用广播特性<code class="docutils literal notranslate"> <span class="pre">diff_faces</span> <span class="pre">=</span> <span class="pre">flatten_faces</span> <span class="pre">-</span> <span class="pre">average_face</span></code>将$K$×$MN$的矩阵减去1×$MN$的矩阵，等价于前者每一行都减去1×$MN$的矩阵，实现中心化数据，进一步利用点乘得到协方差矩阵。</p>
+<ul class="simple">
+<li><p>主成分提取</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>	<span class="c1"># EVD</span>
+    <span class="n">e_vals</span><span class="p">,</span> <span class="n">e_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">linalg</span><span class="o">.</span><span class="n">eigh</span><span class="p">(</span><span class="n">C_faces</span><span class="p">)</span>
+
+    <span class="c1"># 实数化</span>
+    <span class="n">e_vals</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">e_vals</span><span class="p">)</span>
+    <span class="n">e_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">real</span><span class="p">(</span><span class="n">e_vecs</span><span class="p">)</span>
+
+    <span class="c1"># np.linalg.eigh求得的是升序排列的结果，现将其倒序</span>
+    <span class="n">e_vals_re</span> <span class="o">=</span> <span class="n">e_vals</span><span class="p">[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+    <span class="n">e_vecs_re</span> <span class="o">=</span> <span class="p">(</span><span class="n">e_vecs</span><span class="o">.</span><span class="n">T</span><span class="p">)[::</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">T</span>
+
+    <span class="c1"># 筛选主成分</span>
+    <span class="n">vecs_num</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">main_vals_Sum</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">vals_Sum</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">e_vals_re</span><span class="p">)</span>
+    <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">while</span> <span class="p">(</span><span class="n">main_vals_Sum</span> <span class="o">&lt;</span> <span class="n">vals_Sum</span> <span class="o">*</span> <span class="n">energyPercent</span><span class="p">):</span>
+        <span class="n">main_vals_Sum</span> <span class="o">+=</span> <span class="n">e_vals_re</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+        <span class="n">i</span> <span class="o">+=</span> <span class="mi">1</span>
+    <span class="n">vecs_num</span> <span class="o">=</span> <span class="n">i</span>
+    <span class="n">main_vecs</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="n">vecs_num</span><span class="p">):</span>
+        <span class="n">main_vecs</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e_vecs_re</span><span class="p">[:,</span> <span class="n">i</span><span class="p">])</span>
+    <span class="n">main_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">main_vecs</span><span class="p">)</span><span class="o">.</span><span class="n">T</span>  <span class="c1"># 得到按列排列的筛选后特征向量</span>
+</pre></div>
+</div>
+<p>np.linalg.eigh是EVD函数，得到的特征值、特征向量是按特征值升序排列的，且该函数的输入矩阵必须是对称矩阵，由于输入是协方差矩阵，根据公式可知满足要求。</p>
+<p>实对称矩阵的特征值一定为实数，特征向量一定为实数向量。因此直接对结果取实部，并对序列取倒序。<code class="docutils literal notranslate"> <span class="pre">e_vecs_re</span> <span class="pre">=</span> <span class="pre">(e_vecs.T)[::-1].T</span></code>在于特征向量是按列排的，因此需要转置后倒序。</p>
+<p>倒序后即可通过循环控制筛选主成分。</p>
+<ul class="simple">
+<li><p>保存模型</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 保存模型</span>
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">modelfile</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">modelfile</span> <span class="o">+</span> <span class="s1">&#39;/main_vecs&#39;</span><span class="p">,</span> <span class="n">main_vecs</span><span class="p">)</span>
+    <span class="n">np</span><span class="o">.</span><span class="n">save</span><span class="p">(</span><span class="n">modelfile</span> <span class="o">+</span> <span class="s1">&#39;/avg_face&#39;</span><span class="p">,</span> <span class="n">show_average</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>os.makedirs创建文件夹，np.save将数据保存为.npy文件。</p>
+</section>
+<section id="id15">
+<h3><span class="section-number">3.4.4. </span>4.4 识别过程<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>特征脸空间变换</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 对输入被识别图片进行特征脸空间变换</span>
+    <span class="n">x_face</span> <span class="o">=</span> <span class="p">(</span><span class="n">test_image</span> <span class="o">-</span> <span class="n">avg_face</span><span class="p">)</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>  <span class="c1"># 与平均脸求差</span>
+    <span class="n">y_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">tran_vecs</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">x_face</span><span class="p">)</span>  <span class="c1"># 变换</span>
+
+    <span class="c1"># 对训练集图片进行特征脸空间变换</span>
+    <span class="c1"># 二维图片展平</span>
+    <span class="n">flatten_faces</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">face</span> <span class="ow">in</span> <span class="n">images</span><span class="p">:</span>
+        <span class="n">flatten_faces</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">face</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+    <span class="n">flatten_faces</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">flatten_faces</span><span class="p">)</span>
+
+    <span class="c1"># 变换</span>
+    <span class="n">diff_faces</span> <span class="o">=</span> <span class="n">flatten_faces</span> <span class="o">-</span> <span class="n">avg_face</span><span class="o">.</span><span class="n">flatten</span><span class="p">()</span>  <span class="c1"># 与平均脸求差</span>
+    <span class="n">train_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">tran_vecs</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">diff_faces</span><span class="o">.</span><span class="n">T</span><span class="p">)</span>  <span class="c1"># 变换</span>
+</pre></div>
+</div>
+<p>同样利用广播特性进行多张图片的特征脸空间变换，先得到展平的一维图片的矩阵，其维度是$K$×$MN$，而特征矩阵的转置维度为$N_{\mathrm{PC}}$×$MN$，$N_{\mathrm{PC}}$是主成分特征量数量。因此对图片矩阵转置后代入公式，得到$N_{\mathrm{PC}}$×$K$的矩阵，对应$K$个图片向量变换后得到的按列排列的特征空间坐标。</p>
+<ul class="simple">
+<li><p>求欧氏距离</p></li>
+</ul>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 求最小的欧式距离的序号</span>
+    <span class="n">D</span> <span class="o">=</span> <span class="n">train_vecs</span> <span class="o">-</span> <span class="n">y_vecs</span><span class="o">.</span><span class="n">reshape</span><span class="p">((</span><span class="n">PCN</span><span class="p">,</span> <span class="mi">1</span><span class="p">))</span>  <span class="c1"># 利用python广播性质求差</span>
+    <span class="n">D_2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">diag</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">D</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">D</span><span class="p">))</span>  <span class="c1"># 对角线值即为欧式距离的平方</span>
+    <span class="n">index_similar</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">D_2</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>再次利用广播性质求差，得到$N_{\mathrm{PC}}$×$K$大小的矩阵，是$K$个按列排列的列向量。<code class="docutils literal notranslate"><span class="pre">D.T,</span> <span class="pre">D</span></code>矩阵相乘，对角线上即是向量与本身的内积。使用np.argmin得到向量中最小值的索引，即第几个图片是最相似的。进一步可求得标签。</p>
+</section>
+<section id="id16">
+<h3><span class="section-number">3.4.5. </span>4.5 重构过程<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>	<span class="c1"># 根据不同PCN求重构图片</span>
+    <span class="n">PCNs</span> <span class="o">=</span> <span class="p">[</span><span class="mi">10</span><span class="p">,</span> <span class="mi">25</span><span class="p">,</span> <span class="mi">50</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="n">main_num</span><span class="p">]</span>
+    <span class="k">for</span> <span class="n">PCN</span> <span class="ow">in</span> <span class="n">PCNs</span><span class="p">:</span>
+        <span class="n">tran_vecs</span> <span class="o">=</span> <span class="n">main_vecs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="n">PCN</span><span class="p">]</span>  <span class="c1"># 取对应数量</span>
+        <span class="n">y_vecs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">tran_vecs</span><span class="o">.</span><span class="n">T</span><span class="p">,</span> <span class="n">x_face</span><span class="p">)</span>  <span class="c1"># 变换</span>
+        <span class="n">re_face</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">dot</span><span class="p">(</span><span class="n">tran_vecs</span><span class="p">,</span> <span class="n">y_vecs</span><span class="p">)</span>  <span class="c1"># 重构</span>
+
+        <span class="c1"># 绘制</span>
+        <span class="n">re_face</span> <span class="o">=</span> <span class="n">re_face</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">SIZE</span><span class="p">)</span>
+        <span class="n">re_face</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">re_face</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">NORM_MINMAX</span><span class="p">,</span>
+                                <span class="n">cv2</span><span class="o">.</span><span class="n">CV_8UC1</span><span class="p">)</span>  <span class="c1"># 映射到255像素</span>
+        <span class="n">re_face</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">re_face</span><span class="p">)</span>
+        <span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="n">imagename</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">PCN</span><span class="p">)</span> <span class="o">+</span> <span class="s1">&#39;.jpg&#39;</span><span class="p">,</span> <span class="n">re_face</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>重构过程是坐标变换的逆变换，最关键即一行代码。按照要求，使用不同数量的特征向量作为特征矩阵做变换。</p>
+</section>
+<section id="id17">
+<h3><span class="section-number">3.4.6. </span>4.6 模型数据绘制<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>	<span class="c1"># 绘制前10个特征脸</span>
+    <span class="n">main_image0</span> <span class="o">=</span> <span class="n">main_vecs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">SIZE</span><span class="p">)</span>
+    <span class="c1"># 将像素值正则化至255像素范围</span>
+    <span class="n">PCs</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">main_image0</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">NORM_MINMAX</span><span class="p">,</span>
+                        <span class="n">cv2</span><span class="o">.</span><span class="n">CV_8UC1</span><span class="p">)</span>
+    <span class="c1"># 组合其他图片</span>
+    <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">11</span><span class="p">):</span>
+        <span class="n">main_image</span> <span class="o">=</span> <span class="n">main_vecs</span><span class="p">[:,</span> <span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">SIZE</span><span class="p">)</span>
+        <span class="n">main_image</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">main_image</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">NORM_MINMAX</span><span class="p">,</span>
+                                   <span class="n">cv2</span><span class="o">.</span><span class="n">CV_8UC1</span><span class="p">)</span>
+        <span class="n">PCs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">hstack</span><span class="p">([</span><span class="n">PCs</span><span class="p">,</span> <span class="n">main_image</span><span class="p">])</span>
+    <span class="n">PCs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">PCs</span><span class="p">)</span>
+    <span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="n">imagename</span> <span class="o">+</span> <span class="s2">&quot;_PCs_10.jpg&quot;</span><span class="p">,</span> <span class="n">PCs</span><span class="p">)</span>
+
+    <span class="c1"># 绘制展示特征脸的合成</span>
+    <span class="n">CC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">main_vecs</span><span class="p">[:,</span> <span class="mi">0</span><span class="p">:</span><span class="mi">10</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>  <span class="c1"># 按列合成</span>
+    <span class="n">CC</span> <span class="o">=</span> <span class="n">CC</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">SIZE</span><span class="p">)</span>
+    <span class="n">CC</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">normalize</span><span class="p">(</span><span class="n">CC</span><span class="p">,</span> <span class="kc">None</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">NORM_MINMAX</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">CV_8UC1</span><span class="p">)</span>
+    <span class="n">CC</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">uint8</span><span class="p">(</span><span class="n">CC</span><span class="p">)</span>
+    <span class="n">cv2</span><span class="o">.</span><span class="n">imwrite</span><span class="p">(</span><span class="n">imagename</span> <span class="o">+</span> <span class="s2">&quot;_PCs_sum.jpg&quot;</span><span class="p">,</span> <span class="n">CC</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>由于特征向量是单位向量，需要将值拉伸至255像素范围才便于显示，因此使用openCV的函数实现。基本流程是维度重建为2维，拉伸至255像素值，取整，保存。</p>
+</section>
+</section>
+<section id="id18">
+<h2><span class="section-number">3.5. </span>五、实验结果与分析<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h2>
+<section id="id19">
+<h3><span class="section-number">3.5.1. </span>5.1 模型数据绘制<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>平均脸</p></li>
+</ul>
+<center class="half">
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\total_average.jpg"  width=100/>
+</center><p>训练得到的平均脸如上，可以看到图像周边模糊，而中心较为清晰，特别是眼睛附近更加清晰。且图像整体对称且匀称。</p>
+<ul class="simple">
+<li><p>前十特征脸</p></li>
+</ul>
+<p><img alt="total_PCs_10" src="D:%5CVS%5Cvscode-py310%5CComputerVision%5CHW3_Eigenface%5Ctotal_PCs_10.jpg" /></p>
+<p>前十张特征脸相比于平均脸则相对有了些许细节，例如明暗不同，主要特征不同，有的有明显的眼镜，有的则无，而且每张图片几乎完全不相似，体现了特征向量的正交性。</p>
+<ul class="simple">
+<li><p>前十个特征脸的叠加</p></li>
+</ul>
+<p><img alt="total_PCs_sum" src="D:%5CVS%5Cvscode-py310%5CComputerVision%5CHW3_Eigenface%5Ctotal_PCs_sum.jpg" /></p>
+<p>前十个特征脸的直接叠加得到的本质是特征坐标为（1，1，1，1，1，1，1，1，1，1）重构得到的人脸。改变坐标或者增加、减少维度，可以进一步改变输出的人脸结果。</p>
+</section>
+<section id="id20">
+<h3><span class="section-number">3.5.2. </span>5.2 识别结果<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h3>
+<ul>
+<li><p>对模型输入一张不曾训练的个人图片识别，输出最相似的训练集图片：</p>
+<center class="half">
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\self_test.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\similar_image.jpg" width=100/>
+</center></li>
+</ul>
+<p>左图为输入图片，右图输出最相似的训练集图片。可以看到人物是正确的，角度是类似的。识别功能实现。</p>
+<ul>
+<li><p>对模型输入一张不曾训练的个人图片识别，输出重构图片：</p>
+<center class="half">
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image10.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image25.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image50.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image100.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\restruct_image181.jpg" width=100/>
+</center></li>
+</ul>
+<p>PCN的数量依次是10、25、50、100、181个，输入图片即上文彩色图片，可以看到PCN数量依次增大，图片本身与原图像越来越相似。但是在细节的重构方面非常不足，严重模糊，这与本身图片中干扰噪声较多也有关。</p>
+<ul>
+<li><p>对模型输入训练过的个人图片识别，输出重构图片：</p>
+<center class="half">
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re210.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re225.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re250.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re2100.jpg" width=100/>
+<img src="D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\Re2181.jpg" width=100/>
+</center></li>
+</ul>
+<p>可以看到本次重构的结果，细节方面更加丰富。且从PCN逐渐增大，一开始，可以看到本身个人图片眼睛的位置与重构图片白色眼睛有错位，后来眼睛更加明显。反思现象，可能是个人数据的图片是没有经过程序变换的，因为眼睛位置数据缺失，因此会导致重构时有错位的发生，是训练集内部图像数据不够统一。</p>
+</section>
+<section id="id21">
+<h3><span class="section-number">3.5.3. </span>5.2 识别率测试结果<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h3>
+<ul class="simple">
+<li><p>对预处理后的测试集进行测试</p></li>
+</ul>
+<p>![PC-Rank1 rate curve](D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\PC-Rank1 rate curve.jpg)</p>
+<p>可以看到整体识别率较高，最低75%, 最高86%，分别在PCN=10，PCN=50、75时达到。整体是符合理论预计的，即PCN数量越多，识别率越高，但在数量达到100以上时，识别率反而有一定的降低，可能是过拟合造成的性能变差。</p>
+<ul class="simple">
+<li><p>对没有预处理的测试集进行测试：</p></li>
+</ul>
+<p>![PC-Rank1 rate curve Ⅱ](D:\VS\vscode-py310\ComputerVision\HW3_Eigenface\PC-Rank1 rate curve Ⅱ.jpg)</p>
+<p>没有预处理的测试集，本质是没有进行根据眼睛位置变换的处理，因此对此测试集进行测试，得到了更加明显的结果，可以看到PCN=10时，识别率非常低，仅有22%； 而PCN=50时识别率最高，也仅有29%；而且当PCN进一步增加，识别率更加明显的下降，最终下降至24%，更明显地表现出了过拟合的问题。</p>
+</section>
+</section>
+<section id="id22">
+<h2><span class="section-number">3.6. </span>六、结论与心得体会<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h2>
+<section id="id23">
+<h3><span class="section-number">3.6.1. </span>结论<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h3>
+<p>该程序能够基本完成训练、识别、重构的任务。</p>
+<p>可以进一步改善个人训练图片，调整其图片缩放、或者得到眼睛位置数据后进一步变形图片。</p>
+</section>
+<section id="id24">
+<h3><span class="section-number">3.6.2. </span>心得体会<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h3>
+<ol class="simple">
+<li><p>使用python语言在处理向量时可以更便捷的进行数据处理，但处理过程中要注意维度问题，才能捋清变换过程。</p></li>
+<li><p>在其他课程上学习过SVD方法，可以不必求协方差矩阵，可以直接求主特征，达到减少计算量的目的，是一个可以进一步探索的方法。</p></li>
+</ol>
+</section>
+</section>
+<section id="id25">
+<h2><span class="section-number">3.7. </span>七、参考文献<a class="headerlink" href="#id25" title="Permalink to this heading"></a></h2>
+<p>[1],<a class="reference external" href="https://blog.csdn.net/weixin_45634365">弈-剑</a>,Eigenface(PCA)人脸识别实验, [OL],OpenCV, 2021-02-01, [2023-12-17], https://docs.opencv.org/2.4/modules/contrib/doc/facerec/facerec_tutorial.html#id27</p>
+<p>[2],Philipp Wagner, <a class="reference external" href="https://docs.opencv.org/2.4/modules/contrib/doc/facerec/facerec_tutorial.html#id27">Face Recognition with OpenCV</a>, [OL],CSDN,  2012, [2023-12-17],https://blog.csdn.net/weixin_45634365/article/details/113529174</p>
+<p>[3],opencv实现Eigenface人脸识别,  [OL]， GitHub，2021-01-29，[2023-12-17], https://x-wflo.github.io/2021/01/29/cv_report4/#</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="HW2.html" class="btn btn-neutral float-left" title="2. 编程实现多张图片的自动拼接" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="HW4.html" class="btn btn-neutral float-right" title="4. 编程实现 LeNet 的训练和 U-Net 的补全及测试" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Zhanfeng Xu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

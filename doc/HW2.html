@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en">
+<head>
+  <meta charset="utf-8" /><meta name="generator" content="Docutils 0.18.1: http://docutils.sourceforge.net/" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>2. 编程实现多张图片的自动拼接 &mdash; ComputerVersionCourse 1.0 documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css" />
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="_static/doctools.js"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="3. 写代码实现Eigenface人脸识别的训练、识别、重构过程" href="HW3.html" />
+    <link rel="prev" title="1. Canny边缘检测算法实现" href="HW1.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ComputerVersionCourse
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="HW1.html">1. Canny边缘检测算法实现</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">2. 编程实现多张图片的自动拼接</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#id2">2.1. 一、功能简述及运行说明</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id3">2.1.1. 1.1 功能简述</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id4">2.1.2. 1.2 运行说明</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id5">2.2. 二、开发与运行环境</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#id6">2.3. 三、算法原理</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id7">2.3.1. 3.1 算法流程图</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id8">2.3.2. 3.2 具体原理介绍</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id9">2.3.2.1. 1.  特征点提取</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id10">2.3.2.2. 2.  特征点匹配</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#h">2.3.2.3. 3.  计算透视变换矩阵H</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id11">2.3.2.4. 4. 图像变形</a></li>
+<li class="toctree-l4"><a class="reference internal" href="#id12">2.3.2.5. 5. 图像融合</a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id13">2.4. 四、具体实现</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id14">2.4.1. 4.1 特征点提取</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id15">2.4.2. 4.2 特征点匹配</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id16">2.4.3. 4.3 计算透视变换矩阵H</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id17">2.4.4. 4.4 图像变形与融合</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id18">2.5. 五、实验结果与分析</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id19">2.5.1. 5.1 特征点提取结果</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id20">2.5.2. 5.2 特征点匹配结果</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id21">2.5.3. 5.3 图片变换与混合</a><ul>
+<li class="toctree-l4"><a class="reference internal" href="#id22">2.5.3.1. 5.4 多张图片拼接</a></li>
+</ul>
+</li>
+<li class="toctree-l3"><a class="reference internal" href="#id23">2.5.4. 5.5 使用个人图片效果</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id24">2.6. 六、结论与心得体会</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#id25">2.6.1. 结论</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#id26">2.6.2. 心得体会</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#id27">2.7. 七、参考文献</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="HW3.html">3. 写代码实现Eigenface人脸识别的训练、识别、重构过程</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW4.html">4. 编程实现 LeNet 的训练和 U-Net 的补全及测试</a></li>
+<li class="toctree-l1"><a class="reference internal" href="HW5.html">5. 精灵宝可梦类型预测任务</a></li>
+<li class="toctree-l1"><a class="reference internal" href="review.html">6. 计算机视觉复习</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ComputerVersionCourse</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active"><span class="section-number">2. </span>编程实现多张图片的自动拼接</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/HW2.md.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="id1">
+<h1><span class="section-number">2. </span>编程实现多张图片的自动拼接<a class="headerlink" href="#id1" title="Permalink to this heading"></a></h1>
+<p>姓名：许展风 			学号：3210100658</p>
+<p>电子邮箱：zhanfeng_xu&#64;outlook.com  		 联系电话：15224131655</p>
+<p>老师：潘纲老师			报告日期：2023年12月4日</p>
+<section id="id2">
+<h2><span class="section-number">2.1. </span>一、功能简述及运行说明<a class="headerlink" href="#id2" title="Permalink to this heading"></a></h2>
+<section id="id3">
+<h3><span class="section-number">2.1.1. </span>1.1 功能简述<a class="headerlink" href="#id3" title="Permalink to this heading"></a></h3>
+<p>对输入的多张彩色图像，通过算法实现多张图片的拼接。</p>
+</section>
+<section id="id4">
+<h3><span class="section-number">2.1.2. </span>1.2 运行说明<a class="headerlink" href="#id4" title="Permalink to this heading"></a></h3>
+<p>程序运行后，第一步根据提示输入待拼接的图片数量，第二步依次输入图片路径，第三步输入输出图片名称。回车后程序运行，并输出最后一步图片拼接的中间过程，以及最终所有图片的拼接结果。</p>
+</section>
+</section>
+<section id="id5">
+<h2><span class="section-number">2.2. </span>二、开发与运行环境<a class="headerlink" href="#id5" title="Permalink to this heading"></a></h2>
+<p>编程语言：python 3.10.6</p>
+<p>编程环境：VScode+Jupyter Notebook</p>
+<p>运行环境：Windows</p>
+</section>
+<section id="id6">
+<h2><span class="section-number">2.3. </span>三、算法原理<a class="headerlink" href="#id6" title="Permalink to this heading"></a></h2>
+<section id="id7">
+<h3><span class="section-number">2.3.1. </span>3.1 算法流程图<a class="headerlink" href="#id7" title="Permalink to this heading"></a></h3>
+<div class="highlight-mermaid notranslate"><div class="highlight"><pre><span></span>graph LR
+    A[彩色图片1]
+    B[彩色图片2]
+    A --&gt; C[特征点提取]
+    B --&gt; C
+    C --&gt; D[图像配准]
+    D --&gt; E[计算透视变换矩阵H]
+    E --&gt; F[图像变形]
+    F --&gt; G[图像融合]
+</pre></div>
+</div>
+</section>
+<section id="id8">
+<h3><span class="section-number">2.3.2. </span>3.2 具体原理介绍<a class="headerlink" href="#id8" title="Permalink to this heading"></a></h3>
+<section id="id9">
+<h4><span class="section-number">2.3.2.1. </span>1.  特征点提取<a class="headerlink" href="#id9" title="Permalink to this heading"></a></h4>
+<p>通过特殊算法检测输入图像的特征点，这些特征可能包括某些方向的极值点，它们不受图像的尺度缩放、亮度变化所影响，是一个稳定的特征。</p>
+</section>
+<section id="id10">
+<h4><span class="section-number">2.3.2.2. </span>2.  特征点匹配<a class="headerlink" href="#id10" title="Permalink to this heading"></a></h4>
+<p>利用图像的特征点建立图像特征点之间的对应，匹配两张图片相同的部分。</p>
+</section>
+<section id="h">
+<h4><span class="section-number">2.3.2.3. </span>3.  计算透视变换矩阵H<a class="headerlink" href="#h" title="Permalink to this heading"></a></h4>
+<p>利用匹配的特征点，建立图像之间的几何对应关系，使它们可以在一个共同参照系中进行变换、比较和分析。</p>
+</section>
+<section id="id11">
+<h4><span class="section-number">2.3.2.4. </span>4. 图像变形<a class="headerlink" href="#id11" title="Permalink to this heading"></a></h4>
+<p>利用变换矩阵H对其中一张图像作透视变换，使得两张图像变为同一参照系。</p>
+</section>
+<section id="id12">
+<h4><span class="section-number">2.3.2.5. </span>5. 图像融合<a class="headerlink" href="#id12" title="Permalink to this heading"></a></h4>
+<p>变形后的图像可以直接拼接，也可以通过改变边界附近图像的灰度，使得图像在缝隙处平滑过渡。</p>
+</section>
+</section>
+</section>
+<section id="id13">
+<h2><span class="section-number">2.4. </span>四、具体实现<a class="headerlink" href="#id13" title="Permalink to this heading"></a></h2>
+<section id="id14">
+<h3><span class="section-number">2.4.1. </span>4.1 特征点提取<a class="headerlink" href="#id14" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># sift特征点计算</span>
+    <span class="n">sift</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">SIFT_create</span><span class="p">()</span>
+    <span class="n">kp1</span><span class="p">,</span> <span class="n">des1</span> <span class="o">=</span> <span class="n">sift</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">imgGray1</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">kp2</span><span class="p">,</span> <span class="n">des2</span> <span class="o">=</span> <span class="n">sift</span><span class="o">.</span><span class="n">detectAndCompute</span><span class="p">(</span><span class="n">imgGray2</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>使用SIFT算法提取图片特征点，SIFT的全称是Scale Invariant Feature Transform，尺度不变特征变换，SIFT特征对旋转、尺度缩放、亮度变化等保持不变性，是一种非常稳定的局部特征。[2]</p>
+</section>
+<section id="id15">
+<h3><span class="section-number">2.4.2. </span>4.2 特征点匹配<a class="headerlink" href="#id15" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 对应特征点配对</span>
+    <span class="n">bf</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">BFMatcher</span><span class="p">(</span><span class="n">cv2</span><span class="o">.</span><span class="n">NORM_L2</span><span class="p">)</span>
+    <span class="n">matches</span> <span class="o">=</span> <span class="n">bf</span><span class="o">.</span><span class="n">knnMatch</span><span class="p">(</span><span class="n">des1</span><span class="p">,</span> <span class="n">des2</span><span class="p">,</span> <span class="n">k</span><span class="o">=</span><span class="mi">2</span><span class="p">)</span>
+
+    <span class="n">goodMatch</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 配对点集合，用于画图</span>
+    <span class="n">good</span> <span class="o">=</span> <span class="p">[]</span>  <span class="c1"># 配对点坐标序号集合， 用于后续求变换矩阵</span>
+    <span class="k">for</span> <span class="n">m</span><span class="p">,</span> <span class="n">n</span> <span class="ow">in</span> <span class="n">matches</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">m</span><span class="o">.</span><span class="n">distance</span> <span class="o">&lt;</span> <span class="mf">0.75</span> <span class="o">*</span> <span class="n">n</span><span class="o">.</span><span class="n">distance</span><span class="p">:</span>
+            <span class="n">goodMatch</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+            <span class="n">good</span><span class="o">.</span><span class="n">append</span><span class="p">((</span><span class="n">m</span><span class="o">.</span><span class="n">trainIdx</span><span class="p">,</span> <span class="n">m</span><span class="o">.</span><span class="n">queryIdx</span><span class="p">))</span>
+</pre></div>
+</div>
+<p>cv2.BFMatcher是openCV库中的一种匹配器，Brute-Force蛮力匹配器，该匹配器将两组中的所有特征点进行匹配，返回距离最近的匹配项。再将蛮力匹配得到的结果进行筛选，当最近距离与次近距离的比值小于ratio值时的配对保留。存储保留配对的索引值，便于后续索引。</p>
+<p>另一种匹配器为FLANN匹配器，它利用最近邻搜索的优化算法，可以在大型数据集中拥有比BF匹配器更快的运算速度，在本实验中没有必要使用。</p>
+</section>
+<section id="id16">
+<h3><span class="section-number">2.4.3. </span>4.3 计算透视变换矩阵H<a class="headerlink" href="#id16" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 求变换矩阵</span>
+    <span class="n">pts1</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">([</span><span class="n">kp1</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">pt</span> <span class="k">for</span> <span class="p">(</span><span class="n">_</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="ow">in</span> <span class="n">good</span><span class="p">])</span>
+    <span class="n">pts2</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">([</span><span class="n">kp2</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">pt</span> <span class="k">for</span> <span class="p">(</span><span class="n">i</span><span class="p">,</span> <span class="n">_</span><span class="p">)</span> <span class="ow">in</span> <span class="n">good</span><span class="p">])</span>
+    <span class="n">H</span><span class="p">,</span> <span class="n">status</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">findHomography</span><span class="p">(</span><span class="n">pts1</span><span class="p">,</span> <span class="n">pts2</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">RANSAC</span><span class="p">,</span> <span class="mf">4.0</span><span class="p">)</span>
+</pre></div>
+</div>
+<p>利用保留匹配点的索引提取匹配点的坐标，利用cv2.findHomography函数计算单应性矩阵，使用RANSAC方法。</p>
+</section>
+<section id="id17">
+<h3><span class="section-number">2.4.4. </span>4.4 图像变形与融合<a class="headerlink" href="#id17" title="Permalink to this heading"></a></h3>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span>    <span class="c1"># 用变换矩阵对imga作透视变换</span>
+    <span class="n">tranRes</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">warpPerspective</span><span class="p">(</span><span class="n">img1</span><span class="p">,</span> <span class="n">H</span><span class="p">,</span> <span class="p">(</span><span class="n">img1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">img1</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]))</span>
+    <span class="c1"># 透视变换后的图片拼接上imgb</span>
+    <span class="n">tranRes</span><span class="p">[</span><span class="n">th</span><span class="p">:</span><span class="n">imgb</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="n">th</span><span class="p">,</span> <span class="n">tw</span><span class="p">:</span><span class="n">imgb</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="n">tw</span><span class="p">]</span> <span class="o">=</span> <span class="n">imgb</span>
+</pre></div>
+</div>
+<p>利用计算得到的矩阵H作为透视变换矩阵，使用透视变换函数对图片1作透视变换。</p>
+<p>在算法实现过程中，可以发现对图片1作透视变换后，图片1会发生包括平移在内的变换，其结果是图片1中与图片2特征对应的位置得到重合，此时直接将图片2覆盖在图片1，即可直接得到混合图片。当使用Yosemite图片作为样本时，会发现实际上图片1会变换后左移，而移动出画布的范围造成变换后信息的缺失。如下图中绿色的区域被丢失。[3]为了解决这个问题，可以扩大初始图片的画布，</p>
+<p><img alt="在这里插入图片描述" src="https://img-blog.csdn.net/20160623114046887#pic_center" /></p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span> <span class="c1"># 由于透视变换将imga图片进行平移、旋转等等操作，所以需要扩大图像画布，避免信息丢失</span>
+    <span class="n">tw</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">imga</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">imgb</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]]))</span>  <span class="c1"># 确定宽度平移量</span>
+    <span class="n">th</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int16</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">max</span><span class="p">([</span><span class="n">imga</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">imgb</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]]))</span>  <span class="c1"># 确定高度平移量</span>
+
+    <span class="n">M</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">float32</span><span class="p">([[</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="n">tw</span><span class="p">],</span> <span class="p">[</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="n">th</span><span class="p">]])</span>  <span class="c1"># 构造平移变换矩阵</span>
+    <span class="n">img1</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">warpAffine</span><span class="p">(</span><span class="n">imga</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span>
+                          <span class="p">(</span><span class="n">imga</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">tw</span><span class="p">,</span>
+                           <span class="n">imga</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">th</span><span class="p">))</span>  <span class="c1"># 变换后，保证了图像的最大尺度变换下信息不丢失</span>
+    <span class="n">img2</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">warpAffine</span><span class="p">(</span><span class="n">imgb</span><span class="p">,</span> <span class="n">M</span><span class="p">,</span>
+                          <span class="p">(</span><span class="n">imga</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">tw</span><span class="p">,</span>
+                           <span class="n">imga</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">+</span> <span class="mi">2</span> <span class="o">*</span> <span class="n">th</span><span class="p">))</span>  <span class="c1"># 对imgb作同样处理，便于后续图片直接原位置拼接</span>
+</pre></div>
+</div>
+<p>因此在程序中对输入图片使用平移变换，扩大画布的同时平移图片至中央，此时考虑到图片最大尺度的透视变换，只要两个方向都留足原本图像的大小，就能保证图像不丢失。此时图片混合方法需要将原大小的图片2放入变换后图片1的中央。此时得到的最终结果将保留大片区域的黑边，因为扩大了画布，因此可以再通过截取的方法出去黑边。算法如下：</p>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="k">def</span> <span class="nf">removeBlack</span><span class="p">(</span><span class="n">blackim</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&#39;&#39;&#39;去除图像黑边</span>
+
+<span class="sd">    :blackim: 输入图像</span>
+<span class="sd">    :res_image: 输出图像</span>
+<span class="sd">    &#39;&#39;&#39;</span>
+    <span class="n">blackimgGray</span> <span class="o">=</span> <span class="n">cv2</span><span class="o">.</span><span class="n">cvtColor</span><span class="p">(</span><span class="n">blackim</span><span class="p">,</span> <span class="n">cv2</span><span class="o">.</span><span class="n">COLOR_BGR2GRAY</span><span class="p">)</span>  <span class="c1"># 转为灰度图像</span>
+    <span class="n">edges_y</span><span class="p">,</span> <span class="n">edges_x</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">where</span><span class="p">(</span><span class="n">blackimgGray</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">)</span>  <span class="c1"># 求非黑的有效区域</span>
+    <span class="n">bottom</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">edges_y</span><span class="p">)</span>
+    <span class="n">top</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">edges_y</span><span class="p">)</span>
+    <span class="n">height</span> <span class="o">=</span> <span class="n">top</span> <span class="o">-</span> <span class="n">bottom</span>  <span class="c1"># 求有效区域的最大高度</span>
+
+    <span class="n">left</span> <span class="o">=</span> <span class="nb">min</span><span class="p">(</span><span class="n">edges_x</span><span class="p">)</span>
+    <span class="n">right</span> <span class="o">=</span> <span class="nb">max</span><span class="p">(</span><span class="n">edges_x</span><span class="p">)</span>
+    <span class="n">width</span> <span class="o">=</span> <span class="n">right</span> <span class="o">-</span> <span class="n">left</span>  <span class="c1"># 求有效区域的最小宽度</span>
+
+    <span class="n">res_image</span> <span class="o">=</span> <span class="n">blackim</span><span class="p">[</span><span class="n">bottom</span><span class="p">:</span><span class="n">bottom</span> <span class="o">+</span> <span class="n">height</span><span class="p">,</span> <span class="n">left</span><span class="p">:</span><span class="n">left</span> <span class="o">+</span> <span class="n">width</span><span class="p">]</span>  <span class="c1"># 裁剪出有效区域</span>
+    <span class="k">return</span> <span class="n">res_image</span>
+</pre></div>
+</div>
+</section>
+</section>
+<section id="id18">
+<h2><span class="section-number">2.5. </span>五、实验结果与分析<a class="headerlink" href="#id18" title="Permalink to this heading"></a></h2>
+<section id="id19">
+<h3><span class="section-number">2.5.1. </span>5.1 特征点提取结果<a class="headerlink" href="#id19" title="Permalink to this heading"></a></h3>
+<center class="half">
+<img src="image/HW2/Siftmatch1a.jpg"  width=300/>
+<img src="image/HW2/Siftmatch1b.jpg"  width=300/>
+</center><p>使用了扩大画布的方法后，提取特征点时计算会收到一定的影响，但是可以看到大部分的特征点是能提取到目标图片内部的，因此对最终结果影响较小。</p>
+</section>
+<section id="id20">
+<h3><span class="section-number">2.5.2. </span>5.2 特征点匹配结果<a class="headerlink" href="#id20" title="Permalink to this heading"></a></h3>
+<center class="half">
+<img src="image/HW2/Matchmatch1.jpg" width=1200/>
+</center><p>图中显示了前100个匹配点结果，依然能看到有部分的特征点匹配收到影响，但是由于匹配到的有效配对点有很多，依然对最终的变换矩阵影响较小。</p>
+</section>
+<section id="id21">
+<h3><span class="section-number">2.5.3. </span>5.3 图片变换与混合<a class="headerlink" href="#id21" title="Permalink to this heading"></a></h3>
+<center class="half">
+<img src="image/HW2/Resmatch1.jpg" width=600/>
+</center><p>图片1 变换后与图片2叠加，去黑边处理后，可以发现相同的部分能够充分重叠，只是分界处有灰度级的区别，因此有分界线痕迹。</p>
+<section id="id22">
+<h4><span class="section-number">2.5.3.1. </span>5.4 多张图片拼接<a class="headerlink" href="#id22" title="Permalink to this heading"></a></h4>
+<center class="half">
+      <img src="image/HW2/Resmatch2.jpg" title='个人彩色原图' width=700/>
+      <img src="image/HW2/Resmatch3.jpg" title='个人彩色原图' width=700/>
+</center><p>最终得到多张图片拼接结果，可以发现在位置上能够得到充分混合，而在灰度级上还有较明显的区别。</p>
+</section>
+</section>
+<section id="id23">
+<h3><span class="section-number">2.5.4. </span>5.5 使用个人图片效果<a class="headerlink" href="#id23" title="Permalink to this heading"></a></h3>
+  <center class="half">
+  <img src="image/HW2/room1.jpg" width=200/>
+  <img src="image/HW2/room2.jpg" width=200/>
+  <img src="image/HW2/room3.jpg" width=200/>
+  <img src="image/HW2/room4.jpg" width=200/>
+  <img src="image/HW2/room5.jpg" width=200/>
+  </center><p>待拼接的5张图片原图如上，是在西教用手机拍摄的五张照片。拼接的效果如下。</p>
+  <center class="half">
+  <img src="D:\VS\vscode-py310\Resname.jpg" width=500/>
+  </center><p>可以看到拼接结果是正确的，通过墙与地面的接缝的笔直情况判断出拼接的效果是好的，它以第3张图片视角为主视角，将其他图片实现了变换拼接。由于是近景，拍摄时视角的转向比较大，所以拼接时变换的程度也大，对应视角的剧烈变化。同时可以发现，由于手机摄影亮度自动调节的关系，第一张图片与其他图片有明显不一样的亮度，从拼接结果也能明显的看出来。</p>
+</section>
+</section>
+<section id="id24">
+<h2><span class="section-number">2.6. </span>六、结论与心得体会<a class="headerlink" href="#id24" title="Permalink to this heading"></a></h2>
+<section id="id25">
+<h3><span class="section-number">2.6.1. </span>结论<a class="headerlink" href="#id25" title="Permalink to this heading"></a></h3>
+<p>该程序能够基本完成图像拼接的任务。</p>
+<p>在两方面有一定的瑕疵，其一是扩大画布避免信息丢失的方法，对特征点的检测和匹配存在一定的影响。且处理大图像时将消耗大量的空间存储图像信息。如果对于输入的图像有先验的透视变换的尺度和方向的估计，可以特定的对画布进行合适大小的扩大，一定程度上节省空间。</p>
+<p>另一方面是由于图像噪声、光照曝光度、模型匹配误差等因素，直接的图像拼接后，重叠区域的拼接处会出现比较明显的边痕迹[4]，这个问题一般通过multi-band bleing算法来解决。采用的方法是直接对带拼接的两个图片进行拉普拉斯金字塔分解，后一半对前一半进行融合。由于时间及复杂度问题没能完成。</p>
+</section>
+<section id="id26">
+<h3><span class="section-number">2.6.2. </span>心得体会<a class="headerlink" href="#id26" title="Permalink to this heading"></a></h3>
+<ol class="simple">
+<li><p>图像拼接原理涉及到的算法很多很复杂，例如包括sirf特征点提取算法、单应性矩阵求解算法等等，在这个程序里都直接用openCV中的函数实现了。但是对于图像拼接的一般流程有了充分的熟悉与掌握。</p></li>
+<li><p>实验时最大困难是变换后信息丢失的问题，其实解决这个问题角度考虑了三个，一是从一开始改变画布，也就是程序最终采用的方法；二是在透视变换时增大显示范围，但是这个操作是直接用一个函数实现的，难以直接调整；三是改变矩阵H，但不清楚改变H后，对于重叠部分是否还重叠的影响，也没有采用。</p></li>
+<li><p>编程时参考了较多CSDN上的文章与程序，但没有对程序完全照搬，也没有任何程序能够直接搬进来就可以用，都得在理解的基础上进行修改调试，有些文献参考的是原理介绍，有些参考了问题解决的思路，编程的方法与思路。</p></li>
+</ol>
+</section>
+</section>
+<section id="id27">
+<h2><span class="section-number">2.7. </span>七、参考文献<a class="headerlink" href="#id27" title="Permalink to this heading"></a></h2>
+<p>[1],  <a class="reference external" href="https://blog.csdn.net/Thousand_drive">纸箱里的猫咪</a>, Opencv实战——图像拼接, [OL], CSDN,  2022-06-06, [2023-12-04], https://blog.csdn.net/Thousand_drive/article/details/125084810</p>
+<p>[2], <a class="reference external" href="https://blog.csdn.net/lucifer_24">阿飞大魔王</a>, 图像特征点提取（SIFT，SURF，ORB）, [OL]， CSDN, 2019-03-26, [2023-12-04], https://blog.csdn.net/lucifer_24/article/details/88823448</p>
+<p>[3], <a class="reference external" href="https://blog.csdn.net/xiaoyeer666">牛牛牛叶</a>, 解决透视变换后图片信息丢失的问题，附程序,  [OL]， CSDN，2020-08-13，[2023-12-04], https://blog.csdn.net/xiaoyeer666/article/details/107973505</p>
+<p>[4], <a class="reference external" href="https://blog.csdn.net/LIAO_0312">LiaoNanan</a>，Python计算机视觉（三）—— 全景图像拼接， [OL]， CSDN，2022-04-27，[2023-12-04], https://blog.csdn.net/LIAO_0312/article/details/124460671</p>
+</section>
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="HW1.html" class="btn btn-neutral float-left" title="1. Canny边缘检测算法实现" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="HW3.html" class="btn btn-neutral float-right" title="3. 写代码实现Eigenface人脸识别的训练、识别、重构过程" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024, Zhanfeng Xu.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
